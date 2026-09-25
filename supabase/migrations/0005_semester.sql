@@ -146,6 +146,6 @@ returns table (
   left join absensi a on a.siswa_id = s.id
   left join pengumpulan p on p.siswa_id = s.id
   where s.nis = p_nis and s.guru_id = auth.uid()
-  group by s.id, tp.id, tp.nama, tp.status, k.id, k.nama, sm.nama, tp.tgl_mulai
+  group by s.id, tp.id, tp.nama, tp.status, k.id, k.nama, sm.nama, sm.urutan, tp.tgl_mulai
   order by tp.tgl_mulai desc, sm.urutan;
 $$;
