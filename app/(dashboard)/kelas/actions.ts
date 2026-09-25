@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { kelasSchema } from "@/lib/validations/kelas";
-import type { ActionResult } from "@/lib/types";
+import type { ActionResult, Semester, TahunPelajaran } from "@/lib/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 async function getContext() {
   const supabase = await createClient();
@@ -11,6 +12,28 @@ async function getContext() {
     data: { user },
   } = await supabase.auth.getUser();
   return { supabase, userId: user?.id ?? null };
+}
+
+/** Pastikan semester dipilih ada, milik guru, dan berada di tahun aktif. */
+async function ambilSemesterValid(
+  supabase: SupabaseClient,
+  semesterId: string,
+): Promise<{ semester?: Semester; error?: string }> {
+  const { data } = await supabase
+    .from("semester")
+    .select("*, tahun_pelajaran(*)")
+    .eq("id", semesterId)
+    .maybeSingle();
+
+  if (!data) return { error: "Semester tidak ditemukan" };
+
+  const semester = data as unknown as Semester & {
+    tahun_pelajaran: TahunPelajaran;
+  };
+  if (semester.tahun_pelajaran.status !== "aktif") {
+    return { error: "Semester ini bukan bagian dari tahun pelajaran aktif" };
+  }
+  return { semester };
 }
 
 export async function createKelas(input: unknown): Promise<ActionResult> {
@@ -21,25 +44,20 @@ export async function createKelas(input: unknown): Promise<ActionResult> {
   const { supabase, userId } = await getContext();
   if (!userId) return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
 
-  const { data: tahun } = await supabase
-    .from("tahun_pelajaran")
-    .select("id")
-    .eq("status", "aktif")
-    .maybeSingle();
-
-  if (!tahun) {
-    return { ok: false, error: "Belum ada tahun pelajaran aktif" };
-  }
+  const cek = await ambilSemesterValid(supabase, parsed.data.semester_id);
+  if (cek.error) return { ok: false, error: cek.error };
+  const semester = cek.semester!;
 
   const { error } = await supabase.from("kelas").insert({
-    tahun_pelajaran_id: tahun.id,
+    tahun_pelajaran_id: semester.tahun_pelajaran_id,
+    semester_id: semester.id,
     guru_id: userId,
     nama: parsed.data.nama,
   });
 
   if (error) {
     if (error.code === "23505") {
-      return { ok: false, error: "Nama kelas sudah ada di tahun ini" };
+      return { ok: false, error: "Nama kelas sudah ada di semester ini" };
     }
     return { ok: false, error: error.message };
   }
@@ -58,14 +76,17 @@ export async function updateKelas(
   const { supabase, userId } = await getContext();
   if (!userId) return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
 
+  const cek = await ambilSemesterValid(supabase, parsed.data.semester_id);
+  if (cek.error) return { ok: false, error: cek.error };
+
   const { error } = await supabase
     .from("kelas")
-    .update({ nama: parsed.data.nama })
+    .update({ nama: parsed.data.nama, semester_id: parsed.data.semester_id })
     .eq("id", kelasId);
 
   if (error) {
     if (error.code === "23505") {
-      return { ok: false, error: "Nama kelas sudah ada di tahun ini" };
+      return { ok: false, error: "Nama kelas sudah ada di semester ini" };
     }
     return { ok: false, error: error.message };
   }

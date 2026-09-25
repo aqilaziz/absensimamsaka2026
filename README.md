@@ -1,6 +1,8 @@
 # Absensi Santri — Next.js + Supabase
 
-Aplikasi absensi dan penilaian tugas untuk guru/madrasah: tahun pelajaran, kelas, import siswa dari Excel (copy-paste), absensi harian (Hadir/Sakit/Izin/Alpha + keterangan), tugas dengan ceklis atau nilai, rekap persentase per bulan/semester/tahun, detail riwayat santri lintas tahun (NIS), dan arsip tahun lama.
+Aplikasi absensi dan penilaian tugas untuk guru/madrasah: tahun pelajaran → semester (ganjil/genap) → kelas, import siswa dari Excel (copy-paste), absensi harian (Hadir/Sakit/Izin/Alpha + keterangan), tugas dengan ceklis atau nilai, rekap persentase per bulan/semester/tahun, detail riwayat santri lintas tahun (NIS), dan arsip tahun lama.
+
+**Hierarki semester:** setiap tahun pelajaran otomatis punya 2 semester (Ganjil: `tgl_mulai`–`batas_semester`, Genap: `batas_semester`+1–`tgl_selesai`) lewat trigger. Kelas menempel ke satu semester (`kelas.semester_id`, NOT NULL), sehingga nama kelas yang sama bisa ada di Ganjil & Genap. Daftar kelas, tab rekap, dan riwayat santri difilter/per-semester.
 
 Rancangan arsitektur: `../arsitektur-absensi-nextjs-supabase.md`
 
@@ -13,6 +15,7 @@ Rancangan arsitektur: `../arsitektur-absensi-nextjs-supabase.md`
    - `supabase/migrations/0002_rls.sql`
    - `supabase/migrations/0003_triggers.sql`
    - `supabase/migrations/0004_views_rpc.sql`
+   - `supabase/migrations/0005_semester.sql`
 
    Atau via CLI: `supabase link --project-ref <ref>` lalu `supabase db push`.
 
@@ -53,4 +56,4 @@ Rancangan arsitektur: `../arsitektur-absensi-nextjs-supabase.md`
 - `app/(dashboard)` — seluruh halaman setelah login (dilindungi middleware)
 - `lib/supabase` — client Supabase (browser/server/middleware)
 - `lib/validations` — skema Zod
-- `supabase/migrations` — skema database, RLS, trigger, view/RPC
+- `supabase/migrations` — skema database, RLS, trigger, view/RPC, semester

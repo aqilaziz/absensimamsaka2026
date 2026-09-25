@@ -21,7 +21,7 @@ export async function simpanAbsensi(input: unknown): Promise<ActionResult> {
 
   const { data: kelasData } = await supabase
     .from("kelas")
-    .select("*, tahun_pelajaran(*)")
+    .select("*, tahun_pelajaran(*), semester(*)")
     .eq("id", kelas_id)
     .maybeSingle();
   if (!kelasData) return { ok: false, error: "Kelas tidak ditemukan" };
@@ -31,8 +31,16 @@ export async function simpanAbsensi(input: unknown): Promise<ActionResult> {
   if (tp.status !== "aktif") {
     return { ok: false, error: "Tahun pelajaran sudah diarsipkan" };
   }
-  if (tanggal < tp.tgl_mulai || tanggal > tp.tgl_selesai) {
-    return { ok: false, error: "Tanggal di luar rentang tahun pelajaran" };
+  // Absensi hanya boleh dalam rentang semester kelas itu (bila semester
+  // belum tersedia karena migrasi 0005 belum jalan, pakai rentang tahun)
+  const rentang = kelas.semester ?? tp;
+  if (tanggal < rentang.tgl_mulai || tanggal > rentang.tgl_selesai) {
+    return {
+      ok: false,
+      error: kelas.semester
+        ? "Tanggal di luar rentang semester kelas ini"
+        : "Tanggal di luar rentang tahun pelajaran",
+    };
   }
 
   const rows = items.map((i) => ({

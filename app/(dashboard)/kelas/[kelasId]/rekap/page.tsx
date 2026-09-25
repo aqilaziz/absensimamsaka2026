@@ -27,7 +27,7 @@ export default async function RekapPage({
 
   const { data: kelasData } = await supabase
     .from("kelas")
-    .select("*, tahun_pelajaran(*)")
+    .select("*, tahun_pelajaran(*), semester(*)")
     .eq("id", kelasId)
     .maybeSingle();
 

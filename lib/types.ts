@@ -2,10 +2,24 @@ export type StatusTahun = "aktif" | "arsip";
 export type StatusAbsensi = "hadir" | "sakit" | "izin" | "alpha";
 export type TipePenilaian = "ceklis" | "nilai";
 export type StatusKumpul = "belum" | "sudah" | "terlambat";
+export type NamaSemester = "ganjil" | "genap";
 
 export interface Profile {
   id: string;
   nama: string;
+  created_at: string;
+}
+
+/** Semester anak dari tahun pelajaran; tanggalnya diturunkan dari
+ *  tgl_mulai / batas_semester / tgl_selesai oleh trigger database. */
+export interface Semester {
+  id: string;
+  tahun_pelajaran_id: string;
+  guru_id: string;
+  nama: NamaSemester;
+  urutan: number;
+  tgl_mulai: string;
+  tgl_selesai: string;
   created_at: string;
 }
 
@@ -23,6 +37,7 @@ export interface TahunPelajaran {
 export interface Kelas {
   id: string;
   tahun_pelajaran_id: string;
+  semester_id: string;
   guru_id: string;
   nama: string;
   created_at: string;
@@ -136,6 +151,7 @@ export interface RiwayatTahunRow {
   status_tahun: StatusTahun;
   kelas_id: string;
   kelas: string;
+  semester: NamaSemester;
   total_hari: number;
   hadir: number;
   sakit: number;
@@ -150,6 +166,7 @@ export interface RiwayatTahunRow {
 
 export interface KelasDetail extends Kelas {
   tahun_pelajaran: TahunPelajaran;
+  semester?: Semester;
 }
 
 export interface ActionResult {

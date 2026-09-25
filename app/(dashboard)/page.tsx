@@ -1,7 +1,14 @@
 import Link from "next/link";
 import { format } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
-import type { Kelas, Profile, TahunPelajaran } from "@/lib/types";
+import { labelSemester, semesterAktifHariIni } from "@/lib/periode";
+import type {
+  Kelas,
+  NamaSemester,
+  Profile,
+  Semester,
+  TahunPelajaran,
+} from "@/lib/types";
 import { CalendarCheck, ClipboardList, GraduationCap, Users } from "lucide-react";
 
 export default async function DashboardPage() {
@@ -21,14 +28,27 @@ export default async function DashboardPage() {
   let jumlahSantri = 0;
   let absensiHariIni = 0;
   let jumlahTugas = 0;
+  const semesterOf = new Map<string, NamaSemester>();
+  let semesterBerjalan: Semester | null = null;
 
   if (tahun) {
-    const { data: kelasData } = await supabase
-      .from("kelas")
-      .select("*")
-      .eq("tahun_pelajaran_id", tahun.id)
-      .order("nama");
-    kelasList = (kelasData ?? []) as Kelas[];
+    const [resKelas, resSemester] = await Promise.all([
+      supabase
+        .from("kelas")
+        .select("*")
+        .eq("tahun_pelajaran_id", tahun.id)
+        .order("nama"),
+      supabase
+        .from("semester")
+        .select("*")
+        .eq("tahun_pelajaran_id", tahun.id)
+        .order("urutan"),
+    ]);
+    kelasList = (resKelas.data ?? []) as Kelas[];
+    const semesters = (resSemester.data ?? []) as Semester[];
+    semesters.forEach((s) => semesterOf.set(s.id, s.nama));
+    semesterBerjalan =
+      semesters.find((s) => s.nama === semesterAktifHariIni(tahun)) ?? null;
 
     const kelasIds = kelasList.map((k) => k.id);
     if (kelasIds.length > 0) {
@@ -82,7 +102,8 @@ export default async function DashboardPage() {
           Ahlan, {profil?.nama ?? "Guru"}
         </h1>
         <p className="text-sm text-slate-500">
-          Tahun pelajaran {tahun.nama} ·{" "}
+          Tahun pelajaran {tahun.nama}
+          {semesterBerjalan && ` · ${labelSemester(semesterBerjalan.nama)}`} ·{" "}
           {format(new Date(), "EEEE, d MMMM yyyy")}
         </p>
       </div>
@@ -116,6 +137,11 @@ export default async function DashboardPage() {
                 >
                   {k.nama}
                 </Link>
+                {semesterOf.get(k.semester_id) && (
+                  <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                    {semesterOf.get(k.semester_id) === "genap" ? "Genap" : "Ganjil"}
+                  </span>
+                )}
                 <div className="mt-3 flex flex-wrap gap-2 text-xs">
                   <Link
                     href={`/kelas/${k.id}/absensi`}

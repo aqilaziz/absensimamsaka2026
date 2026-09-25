@@ -3,9 +3,18 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createKelas, updateKelas } from "./actions";
-import type { Kelas } from "@/lib/types";
+import { formatTanggal } from "@/lib/periode";
+import type { Kelas, Semester } from "@/lib/types";
 
-export function KelasForm({ kelas }: { kelas?: Kelas }) {
+export function KelasForm({
+  kelas,
+  semesters,
+  semesterAwal,
+}: {
+  kelas?: Kelas;
+  semesters: Semester[];
+  semesterAwal?: string;
+}) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -14,7 +23,10 @@ export function KelasForm({ kelas }: { kelas?: Kelas }) {
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const input = { nama: String(fd.get("nama")) };
+    const input = {
+      nama: String(fd.get("nama")),
+      semester_id: String(fd.get("semester_id")),
+    };
     setError(null);
     startTransition(async () => {
       const res = kelas
@@ -60,6 +72,24 @@ export function KelasForm({ kelas }: { kelas?: Kelas }) {
           className="input w-56"
           placeholder="XII IPA 1"
         />
+      </label>
+      <label className="block">
+        <span className="mb-1 block text-xs font-medium text-slate-600">
+          Semester
+        </span>
+        <select
+          name="semester_id"
+          required
+          defaultValue={kelas?.semester_id ?? semesterAwal ?? ""}
+          className="input w-64"
+        >
+          {semesters.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.nama === "genap" ? "Genap" : "Ganjil"} · {formatTanggal(s.tgl_mulai)} –{" "}
+              {formatTanggal(s.tgl_selesai)}
+            </option>
+          ))}
+        </select>
       </label>
       <button type="submit" disabled={pending} className="btn-primary">
         {pending ? "Menyimpan…" : "Simpan"}

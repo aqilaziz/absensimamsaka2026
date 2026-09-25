@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { labelSemester } from "@/lib/periode";
 import type { KelasDetail } from "@/lib/types";
 
 type TabKey = "santri" | "absensi" | "tugas" | "rekap";
@@ -28,6 +29,11 @@ export function KelasHeader({
           {kelas.tahun_pelajaran.nama}
           {kelas.tahun_pelajaran.status === "arsip" && " · Arsip"}
         </span>
+        {kelas.semester && (
+          <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+            {labelSemester(kelas.semester.nama)}
+          </span>
+        )}
       </div>
       <div className="flex w-fit gap-1 rounded-xl bg-white p-1 ring-1 ring-slate-200">
         {tabs.map((t) => (

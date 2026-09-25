@@ -2,18 +2,19 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { TahunForm } from "./tahun-form";
 import { TahunRowActions } from "./tahun-row-actions";
-import { formatTanggal } from "@/lib/periode";
-import type { TahunPelajaran } from "@/lib/types";
+import { formatTanggal, labelSemester } from "@/lib/periode";
+import type { Semester, TahunPelajaran } from "@/lib/types";
 
 interface TahunDenganKelas extends TahunPelajaran {
   kelas: { count: number }[];
+  semester: (Semester & { kelas: { count: number }[] })[];
 }
 
 export default async function TahunPelajaranPage() {
   const supabase = await createClient();
   const { data } = await supabase
     .from("tahun_pelajaran")
-    .select("*, kelas(count)")
+    .select("*, kelas(count), semester(*, kelas(count))")
     .order("tgl_mulai", { ascending: false });
 
   const tahunList = (data ?? []) as unknown as TahunDenganKelas[];
@@ -77,6 +78,26 @@ export default async function TahunPelajaranPage() {
                 <span className="text-slate-400">Selesai:</span> {formatTanggal(t.tgl_selesai)}
               </p>
             </div>
+
+            {/* Dua semester otomatis dari tanggal di atas */}
+            <div className="grid gap-2 sm:grid-cols-2">
+              {(t.semester ?? [])
+                .slice()
+                .sort((a, b) => a.urutan - b.urutan)
+                .map((s) => (
+                  <div
+                    key={s.id}
+                    className="rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-800 ring-1 ring-emerald-100"
+                  >
+                    <p className="font-semibold">{labelSemester(s.nama)}</p>
+                    <p className="text-emerald-700/80">
+                      {formatTanggal(s.tgl_mulai)} – {formatTanggal(s.tgl_selesai)} ·{" "}
+                      {s.kelas[0]?.count ?? 0} kelas
+                    </p>
+                  </div>
+                ))}
+            </div>
+
             <p className="text-xs text-slate-400">
               {t.kelas[0]?.count ?? 0} kelas
             </p>

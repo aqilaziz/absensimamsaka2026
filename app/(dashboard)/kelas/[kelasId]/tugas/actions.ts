@@ -117,7 +117,7 @@ export async function simpanPengumpulan(
 
   const { data: tugasData } = await supabase
     .from("tugas")
-    .select("*, kelas(*, tahun_pelajaran(*))")
+    .select("*, kelas(*, tahun_pelajaran(*), semester(*))")
     .eq("id", tugas_id)
     .maybeSingle();
   if (!tugasData) return { ok: false, error: "Tugas tidak ditemukan" };

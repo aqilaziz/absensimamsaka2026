@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { NavLink } from "@/components/nav-link";
 import { logout } from "./actions";
-import type { Kelas, Profile, TahunPelajaran } from "@/lib/types";
+import { labelSemester, semesterAktifHariIni } from "@/lib/periode";
+import type { Kelas, Profile, Semester, TahunPelajaran } from "@/lib/types";
 import {
   Archive,
   CalendarRange,
@@ -31,17 +32,29 @@ export default async function DashboardLayout({
     .maybeSingle();
 
   let kelasList: Kelas[] = [];
+  let semesters: Semester[] = [];
   if (tahunAktif) {
-    const { data } = await supabase
-      .from("kelas")
-      .select("*")
-      .eq("tahun_pelajaran_id", (tahunAktif as TahunPelajaran).id)
-      .order("nama");
-    kelasList = (data ?? []) as Kelas[];
+    const [resKelas, resSemester] = await Promise.all([
+      supabase
+        .from("kelas")
+        .select("*")
+        .eq("tahun_pelajaran_id", (tahunAktif as TahunPelajaran).id)
+        .order("nama"),
+      supabase
+        .from("semester")
+        .select("*")
+        .eq("tahun_pelajaran_id", (tahunAktif as TahunPelajaran).id)
+        .order("urutan"),
+    ]);
+    kelasList = (resKelas.data ?? []) as Kelas[];
+    semesters = (resSemester.data ?? []) as Semester[];
   }
 
   const profil = profile as Profile | null;
   const tahun = tahunAktif as TahunPelajaran | null;
+  const semesterBerjalan = tahun
+    ? semesters.find((s) => s.nama === semesterAktifHariIni(tahun)) ?? null
+    : null;
 
   return (
     <div className="flex min-h-screen">
@@ -59,6 +72,11 @@ export default async function DashboardLayout({
           <p className="text-sm font-semibold text-emerald-50">
             {tahun ? tahun.nama : "Belum ada"}
           </p>
+          {semesterBerjalan && (
+            <p className="mt-0.5 text-[11px] font-medium text-emerald-200/80">
+              {labelSemester(semesterBerjalan.nama)}
+            </p>
+          )}
         </div>
 
         <nav className="mt-4 space-y-1 px-3">
@@ -94,15 +112,38 @@ export default async function DashboardLayout({
             <p className="mb-1 px-3 text-[11px] uppercase tracking-wide text-emerald-300/70">
               Kelas Anda
             </p>
-            <div className="space-y-1">
-              {kelasList.map((k) => (
-                <NavLink key={k.id} href={`/kelas/${k.id}`}>
-                  <span className="flex items-center gap-2">
-                    <ClipboardList size={14} /> {k.nama}
-                  </span>
-                </NavLink>
-              ))}
-            </div>
+            {semesters.length > 0 ? (
+              semesters.map((s) => {
+                const items = kelasList.filter((k) => k.semester_id === s.id);
+                if (items.length === 0) return null;
+                return (
+                  <div key={s.id} className="mb-2">
+                    <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-wide text-emerald-300/60">
+                      {labelSemester(s.nama)}
+                    </p>
+                    <div className="space-y-1">
+                      {items.map((k) => (
+                        <NavLink key={k.id} href={`/kelas/${k.id}`}>
+                          <span className="flex items-center gap-2">
+                            <ClipboardList size={14} /> {k.nama}
+                          </span>
+                        </NavLink>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="space-y-1">
+                {kelasList.map((k) => (
+                  <NavLink key={k.id} href={`/kelas/${k.id}`}>
+                    <span className="flex items-center gap-2">
+                      <ClipboardList size={14} /> {k.nama}
+                    </span>
+                  </NavLink>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

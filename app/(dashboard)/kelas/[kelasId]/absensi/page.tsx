@@ -26,7 +26,7 @@ export default async function AbsensiPage({
 
   const { data: kelasData } = await supabase
     .from("kelas")
-    .select("*, tahun_pelajaran(*)")
+    .select("*, tahun_pelajaran(*), semester(*)")
     .eq("id", kelasId)
     .maybeSingle();
 
@@ -67,8 +67,10 @@ export default async function AbsensiPage({
               type="date"
               name="tanggal"
               defaultValue={tanggal}
-              min={kelas.tahun_pelajaran.tgl_mulai}
-              max={kelas.tahun_pelajaran.tgl_selesai}
+              min={kelas.semester?.tgl_mulai ?? kelas.tahun_pelajaran.tgl_mulai}
+              max={
+                kelas.semester?.tgl_selesai ?? kelas.tahun_pelajaran.tgl_selesai
+              }
               className="input w-auto py-1.5"
             />
             <button type="submit" className="ml-2 btn-secondary py-1.5">

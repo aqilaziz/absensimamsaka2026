@@ -1,6 +1,6 @@
 import { addDays, endOfMonth, format, parse } from "date-fns";
 import { id as localeId } from "date-fns/locale";
-import type { TahunPelajaran } from "./types";
+import type { NamaSemester, TahunPelajaran } from "./types";
 
 export type Periode = "bulan" | "semester" | "tahun";
 
@@ -8,6 +8,17 @@ export interface Rentang {
   dari: string;
   sampai: string;
   label: string;
+}
+
+/** Semester yang sedang berjalan hari ini berdasarkan batas semester tahun.
+ *  Ganjil: mulai s.d. batas_semester · Genap: batas_semester+1 s.d. selesai. */
+export function semesterAktifHariIni(tahun: TahunPelajaran): NamaSemester {
+  const hariIni = format(new Date(), "yyyy-MM-dd");
+  return hariIni <= tahun.batas_semester ? "ganjil" : "genap";
+}
+
+export function labelSemester(nama: NamaSemester): string {
+  return nama === "genap" ? "Semester Genap" : "Semester Ganjil";
 }
 
 export function hitungRentang(

@@ -44,6 +44,7 @@ export function RiwayatTahun({
         <thead className="border-b border-slate-200 bg-slate-50">
           <tr>
             <th className="th">Tahun</th>
+            <th className="th">Semester</th>
             <th className="th">Kelas</th>
             <th className="th w-24 text-center">% Hadir</th>
             <th className="th w-16 text-center">S</th>
@@ -66,6 +67,9 @@ export function RiwayatTahun({
                 {r.status_tahun === "arsip" && (
                   <Lock size={12} className="ml-1.5 inline text-slate-400" />
                 )}
+              </td>
+              <td className="td">
+                {r.semester === "genap" ? "Genap" : "Ganjil"}
               </td>
               <td className="td">{r.kelas}</td>
               <td className="td text-center">

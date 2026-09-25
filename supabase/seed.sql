@@ -23,8 +23,11 @@ begin
   values (v_guru, '2026/2027', '2026-07-13', '2027-06-20', '2026-12-20')
   returning id into v_tahun;
 
-  insert into kelas (tahun_pelajaran_id, guru_id, nama)
-  values (v_tahun, v_guru, 'XII IPA 1')
+  -- Semester (Ganjil & Genap) dibuat otomatis oleh trigger tahun_buat_semester
+  insert into kelas (tahun_pelajaran_id, semester_id, guru_id, nama)
+  select v_tahun, s.id, v_guru, 'XII IPA 1'
+  from semester s
+  where s.tahun_pelajaran_id = v_tahun and s.nama = 'ganjil'
   returning id into v_kelas;
 
   insert into siswa (kelas_id, guru_id, nama, nis, urutan) values
