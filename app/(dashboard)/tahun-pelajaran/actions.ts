@@ -19,7 +19,8 @@ export async function createTahun(input: unknown): Promise<ActionResult> {
     return { ok: false, error: parsed.error.issues[0].message };
   }
   const { supabase, userId } = await getUserId();
-  if (!userId) return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
+  if (!userId)
+    return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
 
   // Tanggal semester otomatis dari nama tahun:
   // Ganjil 1 Juli–31 Des (tahun pertama), Genap 1 Jan–30 Jun (tahun kedua).
@@ -38,7 +39,8 @@ export async function createTahun(input: unknown): Promise<ActionResult> {
     if (error.message.includes("one_active_year_per_guru")) {
       return {
         ok: false,
-        error: "Masih ada tahun pelajaran aktif. Arsipkan dulu sebelum membuat baru.",
+        error:
+          "Masih ada tahun pelajaran aktif. Arsipkan dulu sebelum membuat baru.",
       };
     }
     if (error.code === "23505") {
@@ -59,7 +61,8 @@ export async function updateTahun(
     return { ok: false, error: parsed.error.issues[0].message };
   }
   const { supabase, userId } = await getUserId();
-  if (!userId) return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
+  if (!userId)
+    return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
 
   // Tanggal ikut dihitung ulang dari nama (aturan semester tetap).
   const [awal, akhir] = parsed.data.nama.split("/").map(Number);
@@ -87,7 +90,8 @@ export async function updateTahun(
 
 export async function arsipkanTahun(tahunId: string): Promise<ActionResult> {
   const { supabase, userId } = await getUserId();
-  if (!userId) return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
+  if (!userId)
+    return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
 
   const { error } = await supabase
     .from("tahun_pelajaran")
@@ -102,7 +106,8 @@ export async function arsipkanTahun(tahunId: string): Promise<ActionResult> {
 
 export async function hapusTahun(tahunId: string): Promise<ActionResult> {
   const { supabase, userId } = await getUserId();
-  if (!userId) return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
+  if (!userId)
+    return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
 
   // Hanya tahun aktif yang bisa dihapus dari aplikasi; tahun arsip dikunci
   // oleh trigger database agar riwayat tidak hilang.

@@ -69,11 +69,13 @@ export function TahunForm({ tahun }: { tahun?: TahunPelajaran }) {
         />
       </Field>
       <p className="text-xs text-slate-500">
-        Semester Ganjil otomatis 1 Juli – 31 Desember, Semester Genap otomatis
-        1 Januari – 30 Juni.
+        Semester Ganjil otomatis 1 Juli – 31 Desember, Semester Genap otomatis 1
+        Januari – 30 Juni.
       </p>
       {error && (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>
+        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+          {error}
+        </p>
       )}
       <div className="flex gap-2">
         <button
@@ -104,7 +106,9 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-xs font-medium text-slate-600">{label}</span>
+      <span className="mb-1 block text-xs font-medium text-slate-600">
+        {label}
+      </span>
       {children}
     </label>
   );

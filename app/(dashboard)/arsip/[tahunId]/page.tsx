@@ -45,7 +45,10 @@ export default async function ArsipDetailPage({
   return (
     <div className="max-w-4xl space-y-6">
       <div className="space-y-2">
-        <Link href="/arsip" className="text-sm text-slate-400 hover:text-slate-600">
+        <Link
+          href="/arsip"
+          className="text-sm text-slate-400 hover:text-slate-600"
+        >
           ← Arsip
         </Link>
         <div className="flex flex-wrap items-center gap-3">
@@ -109,7 +112,9 @@ export default async function ArsipDetailPage({
                           className="text-slate-700 underline decoration-slate-200 underline-offset-2 hover:text-emerald-700"
                         />
                         {s.nis && (
-                          <span className="text-xs text-slate-400">{s.nis}</span>
+                          <span className="text-xs text-slate-400">
+                            {s.nis}
+                          </span>
                         )}
                       </li>
                     ))}
