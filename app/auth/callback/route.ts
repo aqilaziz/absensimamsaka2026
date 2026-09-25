@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { supabaseKey, supabaseUrl } from "@/lib/supabase/env";
+import { getSupabaseEnv } from "@/lib/supabase/env";
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
@@ -10,7 +10,8 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     const cookieStore = await cookies();
-    const supabase = createServerClient(supabaseUrl, supabaseKey, {
+    const { url, key } = getSupabaseEnv();
+    const supabase = createServerClient(url, key, {
       cookies: {
         getAll() {
           return cookieStore.getAll();
