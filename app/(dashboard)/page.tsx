@@ -9,12 +9,20 @@ import type {
   Semester,
   TahunPelajaran,
 } from "@/lib/types";
-import { CalendarCheck, ClipboardList, GraduationCap, Users } from "lucide-react";
+import {
+  CalendarCheck,
+  ClipboardList,
+  GraduationCap,
+  Users,
+} from "lucide-react";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
 
-  const { data: profile } = await supabase.from("profiles").select("*").single();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("*")
+    .single();
   const { data: tahunAktif } = await supabase
     .from("tahun_pelajaran")
     .select("*")
@@ -103,24 +111,46 @@ export default async function DashboardPage() {
         </h1>
         <p className="text-sm text-slate-500">
           Tahun pelajaran {tahun.nama}
-          {semesterBerjalan && ` · ${labelSemester(semesterBerjalan.nama)}`} ·{" "}
+          {semesterBerjalan &&
+            ` · ${labelSemester(semesterBerjalan.nama)}`} ·{" "}
           {format(new Date(), "EEEE, d MMMM yyyy")}
         </p>
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard icon={<Users size={20} />} label="Kelas" value={kelasList.length} />
-        <StatCard icon={<GraduationCap size={20} />} label="Santri" value={jumlahSantri} />
-        <StatCard icon={<CalendarCheck size={20} />} label="Absensi hari ini" value={absensiHariIni} />
-        <StatCard icon={<ClipboardList size={20} />} label="Total tugas" value={jumlahTugas} />
+        <StatCard
+          icon={<Users size={20} />}
+          label="Kelas"
+          value={kelasList.length}
+        />
+        <StatCard
+          icon={<GraduationCap size={20} />}
+          label="Santri"
+          value={jumlahSantri}
+        />
+        <StatCard
+          icon={<CalendarCheck size={20} />}
+          label="Absensi hari ini"
+          value={absensiHariIni}
+        />
+        <StatCard
+          icon={<ClipboardList size={20} />}
+          label="Total tugas"
+          value={jumlahTugas}
+        />
       </div>
 
       <div>
-        <h2 className="mb-3 text-lg font-semibold text-slate-900">Kelas Anda</h2>
+        <h2 className="mb-3 text-lg font-semibold text-slate-900">
+          Kelas Anda
+        </h2>
         {kelasList.length === 0 ? (
           <p className="rounded-xl bg-white p-6 text-sm text-slate-500 ring-1 ring-slate-200">
             Belum ada kelas.{" "}
-            <Link href="/kelas" className="font-semibold text-emerald-700 hover:underline">
+            <Link
+              href="/kelas"
+              className="font-semibold text-emerald-700 hover:underline"
+            >
               Buat kelas pertama
             </Link>
           </p>
@@ -139,7 +169,9 @@ export default async function DashboardPage() {
                 </Link>
                 {semesterOf.get(k.semester_id) && (
                   <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
-                    {semesterOf.get(k.semester_id) === "genap" ? "Genap" : "Ganjil"}
+                    {semesterOf.get(k.semester_id) === "genap"
+                      ? "Genap"
+                      : "Ganjil"}
                   </span>
                 )}
                 <div className="mt-3 flex flex-wrap gap-2 text-xs">

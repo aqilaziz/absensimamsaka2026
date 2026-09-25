@@ -21,9 +21,18 @@ export async function createTahun(input: unknown): Promise<ActionResult> {
   const { supabase, userId } = await getUserId();
   if (!userId) return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
 
-  const { error } = await supabase
-    .from("tahun_pelajaran")
-    .insert({ ...parsed.data, guru_id: userId });
+  // Tanggal semester otomatis dari nama tahun:
+  // Ganjil 1 Juli–31 Des (tahun pertama), Genap 1 Jan–30 Jun (tahun kedua).
+  const [awal, akhir] = parsed.data.nama.split("/").map(Number);
+  const row = {
+    nama: parsed.data.nama,
+    guru_id: userId,
+    tgl_mulai: `${awal}-07-01`,
+    batas_semester: `${awal}-12-31`,
+    tgl_selesai: `${akhir}-06-30`,
+  };
+
+  const { error } = await supabase.from("tahun_pelajaran").insert(row);
 
   if (error) {
     if (error.message.includes("one_active_year_per_guru")) {
@@ -52,9 +61,18 @@ export async function updateTahun(
   const { supabase, userId } = await getUserId();
   if (!userId) return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
 
+  // Tanggal ikut dihitung ulang dari nama (aturan semester tetap).
+  const [awal, akhir] = parsed.data.nama.split("/").map(Number);
+  const row = {
+    nama: parsed.data.nama,
+    tgl_mulai: `${awal}-07-01`,
+    batas_semester: `${awal}-12-31`,
+    tgl_selesai: `${akhir}-06-30`,
+  };
+
   const { error } = await supabase
     .from("tahun_pelajaran")
-    .update(parsed.data)
+    .update(row)
     .eq("id", tahunId);
 
   if (error) {

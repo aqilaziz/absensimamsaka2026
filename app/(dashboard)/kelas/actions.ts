@@ -42,7 +42,8 @@ export async function createKelas(input: unknown): Promise<ActionResult> {
     return { ok: false, error: parsed.error.issues[0].message };
   }
   const { supabase, userId } = await getContext();
-  if (!userId) return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
+  if (!userId)
+    return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
 
   const cek = await ambilSemesterValid(supabase, parsed.data.semester_id);
   if (cek.error) return { ok: false, error: cek.error };
@@ -74,7 +75,8 @@ export async function updateKelas(
     return { ok: false, error: parsed.error.issues[0].message };
   }
   const { supabase, userId } = await getContext();
-  if (!userId) return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
+  if (!userId)
+    return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
 
   const cek = await ambilSemesterValid(supabase, parsed.data.semester_id);
   if (cek.error) return { ok: false, error: cek.error };
@@ -96,7 +98,8 @@ export async function updateKelas(
 
 export async function hapusKelas(kelasId: string): Promise<ActionResult> {
   const { supabase, userId } = await getContext();
-  if (!userId) return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
+  if (!userId)
+    return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
 
   const { error } = await supabase.from("kelas").delete().eq("id", kelasId);
   if (error) return { ok: false, error: error.message };

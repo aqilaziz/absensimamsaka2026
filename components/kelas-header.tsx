@@ -21,7 +21,10 @@ export function KelasHeader({
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-3">
-        <Link href="/kelas" className="text-sm text-slate-400 hover:text-slate-600">
+        <Link
+          href="/kelas"
+          className="text-sm text-slate-400 hover:text-slate-600"
+        >
           ← Kelas
         </Link>
         <h1 className="text-2xl font-bold text-slate-900">{kelas.nama}</h1>

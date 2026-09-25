@@ -84,7 +84,12 @@ export default async function RekapPage({
     <div className="space-y-6">
       <KelasHeader kelas={kelas} active="rekap" />
 
-      <PeriodeSelector kelasId={kelasId} tab={tab} periode={periode} nilai={nilai} />
+      <PeriodeSelector
+        kelasId={kelasId}
+        tab={tab}
+        periode={periode}
+        nilai={nilai}
+      />
 
       <div className="flex items-center justify-between">
         <p className="text-sm text-slate-600">

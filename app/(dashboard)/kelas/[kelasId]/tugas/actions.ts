@@ -2,10 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import {
-  simpanPengumpulanSchema,
-  tugasSchema,
-} from "@/lib/validations/tugas";
+import { simpanPengumpulanSchema, tugasSchema } from "@/lib/validations/tugas";
 import type { ActionResult, KelasDetail, Tugas } from "@/lib/types";
 
 async function getContext() {
@@ -25,7 +22,8 @@ export async function createTugas(
     return { ok: false, error: parsed.error.issues[0].message };
   }
   const { supabase, userId } = await getContext();
-  if (!userId) return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
+  if (!userId)
+    return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
 
   const { data, error } = await supabase
     .from("tugas")
@@ -58,7 +56,8 @@ export async function updateTugas(
     return { ok: false, error: parsed.error.issues[0].message };
   }
   const { supabase, userId } = await getContext();
-  if (!userId) return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
+  if (!userId)
+    return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
 
   const ubahKeCeklis = parsed.data.tipe === "ceklis";
 
@@ -94,7 +93,8 @@ export async function hapusTugas(
   kelasId: string,
 ): Promise<ActionResult> {
   const { supabase, userId } = await getContext();
-  if (!userId) return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
+  if (!userId)
+    return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
 
   const { error } = await supabase.from("tugas").delete().eq("id", tugasId);
   if (error) return { ok: false, error: error.message };
@@ -103,15 +103,14 @@ export async function hapusTugas(
   return { ok: true };
 }
 
-export async function simpanPengumpulan(
-  input: unknown,
-): Promise<ActionResult> {
+export async function simpanPengumpulan(input: unknown): Promise<ActionResult> {
   const parsed = simpanPengumpulanSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0].message };
   }
   const { supabase, userId } = await getContext();
-  if (!userId) return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
+  if (!userId)
+    return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
 
   const { tugas_id, items } = parsed.data;
 

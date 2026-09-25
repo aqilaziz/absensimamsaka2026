@@ -44,10 +44,10 @@ Rancangan arsitektur: `../arsitektur-absensi-nextjs-supabase.md`
 
 ## Perintah
 
-| Perintah | Fungsi |
-|----------|--------|
-| `npm run dev` | development server |
-| `npm run build` | build produksi |
+| Perintah            | Fungsi                    |
+| ------------------- | ------------------------- |
+| `npm run dev`       | development server        |
+| `npm run build`     | build produksi            |
 | `npm run typecheck` | cek TypeScript tanpa emit |
 
 ## Struktur singkat

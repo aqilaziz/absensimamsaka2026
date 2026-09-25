@@ -40,10 +40,7 @@ export default async function KelasDetailPage({
           {siswaList.length} santri · klik nama untuk melihat riwayat
         </p>
         {aktif && (
-          <Link
-            href={`/kelas/${kelasId}/siswa/import`}
-            className="btn-primary"
-          >
+          <Link href={`/kelas/${kelasId}/siswa/import`} className="btn-primary">
             Impor dari Excel
           </Link>
         )}

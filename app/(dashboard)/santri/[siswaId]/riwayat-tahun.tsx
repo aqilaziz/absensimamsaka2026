@@ -18,9 +18,7 @@ export function RiwayatTahun({
   if (!nis) {
     return (
       <div className="card max-w-xl space-y-3">
-        <p className="text-sm font-semibold text-amber-700">
-          NIS belum diisi
-        </p>
+        <p className="text-sm font-semibold text-amber-700">NIS belum diisi</p>
         <p className="text-sm text-slate-600">
           Isi Nomor Induk Santri agar riwayat santri ini tersambung lintas tahun
           pelajaran (mis. dari kelas X ke XI ke XII).

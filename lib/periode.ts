@@ -51,7 +51,9 @@ export function hitungRentang(
   }
 
   const bulan =
-    nilai && /^\d{4}-\d{2}$/.test(nilai) ? nilai : format(new Date(), "yyyy-MM");
+    nilai && /^\d{4}-\d{2}$/.test(nilai)
+      ? nilai
+      : format(new Date(), "yyyy-MM");
   const start = parse(bulan, "yyyy-MM", new Date());
   return {
     dari: format(start, "yyyy-MM-dd"),
@@ -61,7 +63,9 @@ export function hitungRentang(
 }
 
 export function formatTanggal(iso: string): string {
-  return format(new Date(iso + "T00:00:00"), "d MMM yyyy", { locale: localeId });
+  return format(new Date(iso + "T00:00:00"), "d MMM yyyy", {
+    locale: localeId,
+  });
 }
 
 export function formatTanggalPanjang(iso: string): string {

@@ -33,7 +33,8 @@ export default async function TahunPelajaranPage() {
 
       {tahunList.length === 0 && (
         <p className="card text-sm text-slate-500">
-          Belum ada tahun pelajaran. Klik <b>Buat Tahun Pelajaran</b> untuk memulai.
+          Belum ada tahun pelajaran. Klik <b>Buat Tahun Pelajaran</b> untuk
+          memulai.
         </p>
       )}
 
@@ -42,7 +43,9 @@ export default async function TahunPelajaranPage() {
           <div key={t.id} className="card space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-3">
-                <span className="text-lg font-semibold text-slate-900">{t.nama}</span>
+                <span className="text-lg font-semibold text-slate-900">
+                  {t.nama}
+                </span>
                 {t.status === "aktif" ? (
                   <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
                     Aktif
@@ -66,16 +69,16 @@ export default async function TahunPelajaranPage() {
                 )}
               </div>
             </div>
-            <div className="grid gap-2 text-sm text-slate-600 sm:grid-cols-3">
+            <div className="grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
               <p>
-                <span className="text-slate-400">Mulai:</span> {formatTanggal(t.tgl_mulai)}
+                <span className="text-slate-400">Ganjil:</span>{" "}
+                {formatTanggal(`${t.nama.slice(0, 4)}-07-01`)} –{" "}
+                {formatTanggal(`${t.nama.slice(0, 4)}-12-31`)}
               </p>
               <p>
-                <span className="text-slate-400">Batas semester:</span>{" "}
-                {formatTanggal(t.batas_semester)}
-              </p>
-              <p>
-                <span className="text-slate-400">Selesai:</span> {formatTanggal(t.tgl_selesai)}
+                <span className="text-slate-400">Genap:</span>{" "}
+                {formatTanggal(`${t.nama.slice(5, 9)}-01-01`)} –{" "}
+                {formatTanggal(`${t.nama.slice(5, 9)}-06-30`)}
               </p>
             </div>
 
@@ -91,8 +94,9 @@ export default async function TahunPelajaranPage() {
                   >
                     <p className="font-semibold">{labelSemester(s.nama)}</p>
                     <p className="text-emerald-700/80">
-                      {formatTanggal(s.tgl_mulai)} – {formatTanggal(s.tgl_selesai)} ·{" "}
-                      {s.kelas[0]?.count ?? 0} kelas
+                      {formatTanggal(s.tgl_mulai)} –{" "}
+                      {formatTanggal(s.tgl_selesai)} · {s.kelas[0]?.count ?? 0}{" "}
+                      kelas
                     </p>
                   </div>
                 ))}

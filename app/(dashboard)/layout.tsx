@@ -53,7 +53,7 @@ export default async function DashboardLayout({
   const profil = profile as Profile | null;
   const tahun = tahunAktif as TahunPelajaran | null;
   const semesterBerjalan = tahun
-    ? semesters.find((s) => s.nama === semesterAktifHariIni(tahun)) ?? null
+    ? (semesters.find((s) => s.nama === semesterAktifHariIni(tahun)) ?? null)
     : null;
 
   return (
@@ -62,7 +62,9 @@ export default async function DashboardLayout({
       <aside className="hidden w-64 shrink-0 flex-col bg-emerald-950 md:flex">
         <div className="px-5 py-5">
           <p className="text-lg font-bold text-white">Absensi Santri</p>
-          <p className="text-xs text-emerald-200/70">{profil?.nama ?? "Guru"}</p>
+          <p className="text-xs text-emerald-200/70">
+            {profil?.nama ?? "Guru"}
+          </p>
         </div>
 
         <div className="mx-4 rounded-lg bg-emerald-900/60 px-3 py-2">
@@ -164,8 +166,12 @@ export default async function DashboardLayout({
         <header className="flex items-center gap-3 overflow-x-auto bg-emerald-950 px-4 py-3 md:hidden">
           <span className="shrink-0 font-bold text-white">Absensi Santri</span>
           <nav className="flex items-center gap-1 text-sm">
-            <NavLink href="/" exact>Dashboard</NavLink>
-            <NavLink href="/kelas" exact>Kelas</NavLink>
+            <NavLink href="/" exact>
+              Dashboard
+            </NavLink>
+            <NavLink href="/kelas" exact>
+              Kelas
+            </NavLink>
             <NavLink href="/cari-santri">Cari</NavLink>
             <NavLink href="/arsip">Arsip</NavLink>
           </nav>

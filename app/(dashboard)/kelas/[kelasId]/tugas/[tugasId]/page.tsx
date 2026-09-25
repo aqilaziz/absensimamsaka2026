@@ -54,7 +54,9 @@ export default async function TugasDetailPage({
           >
             ← Daftar tugas
           </Link>
-          <h2 className="mt-1 text-xl font-bold text-slate-900">{tugas.judul}</h2>
+          <h2 className="mt-1 text-xl font-bold text-slate-900">
+            {tugas.judul}
+          </h2>
           <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
             {tugas.tipe === "nilai" ? (
               <span className="rounded-full bg-sky-100 px-2 py-0.5 font-semibold text-sky-700">
@@ -67,14 +69,18 @@ export default async function TugasDetailPage({
             )}
             <span>Diberikan {formatTanggal(tugas.tgl_diberikan)}</span>
             {tugas.tgl_tenggat && (
-              <span className={lewatTenggat ? "font-semibold text-amber-600" : ""}>
+              <span
+                className={lewatTenggat ? "font-semibold text-amber-600" : ""}
+              >
                 · Tenggat {formatTanggal(tugas.tgl_tenggat)}
                 {lewatTenggat && " (lewat)"}
               </span>
             )}
           </div>
           {tugas.deskripsi && (
-            <p className="mt-2 max-w-2xl text-sm text-slate-600">{tugas.deskripsi}</p>
+            <p className="mt-2 max-w-2xl text-sm text-slate-600">
+              {tugas.deskripsi}
+            </p>
           )}
         </div>
         {aktif && <EditTugasToggle kelasId={kelasId} tugas={tugas} />}

@@ -55,7 +55,10 @@ export function LoginForm() {
   return (
     <form onSubmit={onSubmit} className="mt-6 space-y-4">
       <div>
-        <label htmlFor="email" className="mb-1 block text-sm font-medium text-slate-700">
+        <label
+          htmlFor="email"
+          className="mb-1 block text-sm font-medium text-slate-700"
+        >
           Email
         </label>
         <input
@@ -69,7 +72,10 @@ export function LoginForm() {
         />
       </div>
       <div>
-        <label htmlFor="password" className="mb-1 block text-sm font-medium text-slate-700">
+        <label
+          htmlFor="password"
+          className="mb-1 block text-sm font-medium text-slate-700"
+        >
           Password
         </label>
         <input
@@ -83,7 +89,9 @@ export function LoginForm() {
         />
       </div>
       {error && (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>
+        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+          {error}
+        </p>
       )}
       <button
         type="submit"

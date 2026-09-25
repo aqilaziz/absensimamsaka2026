@@ -61,16 +61,15 @@ export default async function SantriDetailPage({
 
   const bulanan = (bulananData ?? []) as BulananSiswa[];
   const absensiList = (absensiData ?? []) as Absensi[];
-  const pengumpulanList = (pengumpulanData ?? []) as unknown as PengumpulanDenganTugas[];
+  const pengumpulanList = (pengumpulanData ??
+    []) as unknown as PengumpulanDenganTugas[];
   const riwayat = (riwayatData ?? []) as RiwayatTahunRow[];
 
   const hitung = (s: StatusAbsensi) =>
     absensiList.filter((a) => a.status === s).length;
   const totalHari = absensiList.length;
   const persenHadir =
-    totalHari > 0
-      ? Math.round((hitung("hadir") / totalHari) * 1000) / 10
-      : 0;
+    totalHari > 0 ? Math.round((hitung("hadir") / totalHari) * 1000) / 10 : 0;
 
   const statusBadge: Record<StatusAbsensi, string> = {
     hadir: "bg-emerald-100 text-emerald-700",
@@ -95,7 +94,9 @@ export default async function SantriDetailPage({
           <tbody className="divide-y divide-slate-100">
             {absensiList.slice(0, 60).map((a) => (
               <tr key={a.id} className="hover:bg-slate-50/60">
-                <td className="td text-slate-600">{formatTanggal(a.tanggal)}</td>
+                <td className="td text-slate-600">
+                  {formatTanggal(a.tanggal)}
+                </td>
                 <td className="td text-center">
                   <span
                     className={`rounded-full px-2 py-0.5 text-xs font-semibold ${statusBadge[a.status]}`}
@@ -147,7 +148,11 @@ export default async function SantriDetailPage({
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatCard label="% Hadir" value={`${persenHadir}%`} tone="emerald" />
-          <StatCard label="Sakit" value={String(hitung("sakit"))} tone="amber" />
+          <StatCard
+            label="Sakit"
+            value={String(hitung("sakit"))}
+            tone="amber"
+          />
           <StatCard label="Izin" value={String(hitung("izin"))} tone="sky" />
           <StatCard label="Alpha" value={String(hitung("alpha"))} tone="red" />
         </div>

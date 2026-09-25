@@ -85,8 +85,8 @@ export function KelasForm({
         >
           {semesters.map((s) => (
             <option key={s.id} value={s.id}>
-              {s.nama === "genap" ? "Genap" : "Ganjil"} · {formatTanggal(s.tgl_mulai)} –{" "}
-              {formatTanggal(s.tgl_selesai)}
+              {s.nama === "genap" ? "Genap" : "Ganjil"} ·{" "}
+              {formatTanggal(s.tgl_mulai)} – {formatTanggal(s.tgl_selesai)}
             </option>
           ))}
         </select>
@@ -94,7 +94,11 @@ export function KelasForm({
       <button type="submit" disabled={pending} className="btn-primary">
         {pending ? "Menyimpan…" : "Simpan"}
       </button>
-      <button type="button" onClick={() => setOpen(false)} className="btn-secondary">
+      <button
+        type="button"
+        onClick={() => setOpen(false)}
+        className="btn-secondary"
+      >
         Batal
       </button>
       {error && <p className="w-full text-sm text-red-600">{error}</p>}

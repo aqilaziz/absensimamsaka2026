@@ -16,9 +16,6 @@ export function TahunForm({ tahun }: { tahun?: TahunPelajaran }) {
     const fd = new FormData(e.currentTarget);
     const input = {
       nama: String(fd.get("nama")),
-      tgl_mulai: String(fd.get("tgl_mulai")),
-      tgl_selesai: String(fd.get("tgl_selesai")),
-      batas_semester: String(fd.get("batas_semester")),
     };
     setError(null);
     startTransition(async () => {
@@ -60,44 +57,21 @@ export function TahunForm({ tahun }: { tahun?: TahunPelajaran }) {
       <h3 className="text-sm font-semibold text-slate-900">
         {tahun ? `Edit ${tahun.nama}` : "Tahun Pelajaran Baru"}
       </h3>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="Nama (mis. 2026/2027)">
-          <input
-            name="nama"
-            required
-            defaultValue={tahun?.nama}
-            className="input"
-            placeholder="2026/2027"
-          />
-        </Field>
-        <Field label="Batas akhir semester ganjil">
-          <input
-            name="batas_semester"
-            type="date"
-            required
-            defaultValue={tahun?.batas_semester}
-            className="input"
-          />
-        </Field>
-        <Field label="Tanggal mulai">
-          <input
-            name="tgl_mulai"
-            type="date"
-            required
-            defaultValue={tahun?.tgl_mulai}
-            className="input"
-          />
-        </Field>
-        <Field label="Tanggal selesai">
-          <input
-            name="tgl_selesai"
-            type="date"
-            required
-            defaultValue={tahun?.tgl_selesai}
-            className="input"
-          />
-        </Field>
-      </div>
+      <Field label="Nama (mis. 2026/2027)">
+        <input
+          name="nama"
+          required
+          defaultValue={tahun?.nama}
+          className="input"
+          placeholder="2026/2027"
+          pattern="\d{4}/\d{4}"
+          title="Format YYYY/YYYY, mis. 2026/2027"
+        />
+      </Field>
+      <p className="text-xs text-slate-500">
+        Semester Ganjil otomatis 1 Juli – 31 Desember, Semester Genap otomatis
+        1 Januari – 30 Juni.
+      </p>
       {error && (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>
       )}

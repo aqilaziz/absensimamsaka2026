@@ -55,8 +55,7 @@ export default async function ArsipDetailPage({
           </span>
         </div>
         <p className="text-sm text-slate-500">
-          {formatTanggal(tahun.tgl_mulai)} — {formatTanggal(tahun.tgl_selesai)} ·
-          batas semester {formatTanggal(tahun.batas_semester)}
+          {formatTanggal(tahun.tgl_mulai)} — {formatTanggal(tahun.tgl_selesai)}
         </p>
       </div>
 

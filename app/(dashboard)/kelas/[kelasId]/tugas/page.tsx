@@ -36,7 +36,9 @@ export default async function TugasListPage({
       <KelasHeader kelas={kelas} active="tugas" />
 
       <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500">{tugasList.length} tugas/kegiatan</p>
+        <p className="text-sm text-slate-500">
+          {tugasList.length} tugas/kegiatan
+        </p>
         {aktif && (
           <Link href={`/kelas/${kelasId}/tugas/baru`} className="btn-primary">
             + Buat Tugas
@@ -80,7 +82,8 @@ export default async function TugasListPage({
                   </div>
                   <p className="mt-1 text-xs text-slate-400">
                     Diberikan {formatTanggal(t.tgl_diberikan)}
-                    {t.tgl_tenggat && ` · Tenggat ${formatTanggal(t.tgl_tenggat)}`}
+                    {t.tgl_tenggat &&
+                      ` · Tenggat ${formatTanggal(t.tgl_tenggat)}`}
                   </p>
                 </div>
                 <div className="text-right text-sm">
