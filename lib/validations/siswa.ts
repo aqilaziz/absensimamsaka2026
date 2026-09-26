@@ -20,4 +20,10 @@ export const hapusBanyakSiswaSchema = z.object({
   siswa_ids: z.array(z.string().uuid()).min(1, "Pilih minimal 1 santri"),
 });
 
+/** Salin seluruh santri dari satu kelas (biasanya semester sebelumnya). */
+export const salinSiswaSchema = z.object({
+  kelas_id: z.string().uuid(),
+  kelas_sumber_id: z.string().uuid(),
+});
+
 export type SiswaItem = z.infer<typeof siswaItemSchema>;

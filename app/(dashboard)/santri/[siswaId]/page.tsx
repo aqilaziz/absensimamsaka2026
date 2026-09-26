@@ -124,15 +124,15 @@ export default async function SantriDetailPage({
     <div className="space-y-6">
       {/* Header profil */}
       <div className="card space-y-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+          <div className="min-w-0">
             <Link
               href={`/kelas/${santri.kelas_id}`}
               className="text-sm text-slate-400 hover:text-slate-600"
             >
               ← {santri.kelas.nama}
             </Link>
-            <h1 className="mt-1 text-2xl font-bold text-slate-900">
+            <h1 className="mt-1 break-words text-xl font-bold text-slate-900 sm:text-2xl">
               {santri.nama}
             </h1>
             <p className="mt-1 text-sm text-slate-500">

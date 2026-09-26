@@ -17,7 +17,7 @@ export function NavLink({
   return (
     <Link
       href={href}
-      className={`block rounded-lg px-3 py-2 text-sm transition ${
+      className={`block shrink-0 whitespace-nowrap rounded-lg px-3 py-2 text-sm transition ${
         active
           ? "bg-emerald-800 font-semibold text-white"
           : "text-emerald-100/80 hover:bg-emerald-800/60 hover:text-white"

@@ -49,11 +49,18 @@ export default async function KelasPage({
     );
   }
 
-  const { data: semData } = await supabase
-    .from("semester")
-    .select("*")
-    .eq("tahun_pelajaran_id", tahun.id)
-    .order("urutan");
+  const [{ data: semData }, { data: data }] = await Promise.all([
+    supabase
+      .from("semester")
+      .select("*")
+      .eq("tahun_pelajaran_id", tahun.id)
+      .order("urutan"),
+    supabase
+      .from("kelas")
+      .select("*, siswa(count), semester:semester!kelas_semester_id_fkey(nama)")
+      .eq("tahun_pelajaran_id", tahun.id)
+      .order("nama"),
+  ]);
 
   const semesters = (semData ?? []) as Semester[];
 
@@ -74,19 +81,27 @@ export default async function KelasPage({
     );
   }
 
-  const { data } = await supabase
-    .from("kelas")
-    .select("*, siswa(count)")
-    .eq("semester_id", semester.id)
-    .order("nama");
+  const kelasSemester = (data ?? []) as unknown as (KelasDenganSiswa & {
+    semester: { nama: NamaSemester } | null;
+  })[];
 
-  const kelasList = (data ?? []) as unknown as KelasDenganSiswa[];
+  // Ambil hanya kelas pada semester yang sedang dipilih, lalu buang field
+  // bantu `semester` agar bentuknya kembali menjadi KelasDenganSiswa.
+  const kelasList: KelasDenganSiswa[] = kelasSemester
+    .filter((k) =>
+      k.semester
+        ? k.semester.nama === semester.nama
+        : k.semester_id === semester.id,
+    )
+    .map(({ semester: _semesterBantu, ...rest }) => rest);
 
   return (
     <div className="max-w-4xl space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Kelas</h1>
+          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">
+            Kelas
+          </h1>
           <p className="text-sm text-slate-500">
             Tahun pelajaran {tahun.nama} · {labelSemester(semester.nama)} (
             {formatTanggal(semester.tgl_mulai)} –{" "}
@@ -97,15 +112,15 @@ export default async function KelasPage({
       </div>
 
       {/* Pilih semester: Ganjil / Genap */}
-      <div className="flex gap-1 rounded-xl bg-white p-1 ring-1 ring-slate-200">
+      <div className="no-scrollbar flex max-w-full gap-1 overflow-x-auto rounded-xl bg-white p-1 ring-1 ring-slate-200">
         {semesters.map((s) => (
           <Link
             key={s.id}
             href={`/kelas?semester=${s.nama}`}
             className={
               s.nama === semester.nama
-                ? "rounded-lg bg-emerald-600 px-4 py-1.5 text-sm font-semibold text-white"
-                : "rounded-lg px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
+                ? "shrink-0 whitespace-nowrap rounded-lg bg-emerald-600 px-4 py-1.5 text-sm font-semibold text-white"
+                : "shrink-0 whitespace-nowrap rounded-lg px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
             }
           >
             {labelSemester(s.nama)}
@@ -123,12 +138,12 @@ export default async function KelasPage({
           {kelasList.map((k) => (
             <div
               key={k.id}
-              className="card flex flex-wrap items-center justify-between gap-3"
+              className="card flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
             >
-              <div>
+              <div className="min-w-0">
                 <Link
                   href={`/kelas/${k.id}`}
-                  className="text-base font-semibold text-slate-900 hover:text-emerald-700"
+                  className="break-words text-base font-semibold text-slate-900 hover:text-emerald-700"
                 >
                   {k.nama}
                 </Link>
@@ -136,7 +151,7 @@ export default async function KelasPage({
                   {k.siswa[0]?.count ?? 0} santri
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <KelasForm
                   kelas={k}
                   semesters={semesters}

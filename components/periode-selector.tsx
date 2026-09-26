@@ -19,7 +19,11 @@ export function PeriodeSelector({
 }) {
   const router = useRouter();
 
-  function go(next: { tab?: RekapTab; periode?: RekapPeriode; nilai?: string }) {
+  function go(next: {
+    tab?: RekapTab;
+    periode?: RekapPeriode;
+    nilai?: string;
+  }) {
     const t = next.tab ?? tab;
     const p = next.periode ?? periode;
     let n = next.nilai ?? nilai;
@@ -40,9 +44,9 @@ export function PeriodeSelector({
   const bulanIni = format(new Date(), "yyyy-MM");
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
+    <div className="flex max-w-full flex-wrap items-center gap-2 sm:gap-3">
       {/* Tab absensi/tugas */}
-      <div className="flex gap-1 rounded-xl bg-white p-1 ring-1 ring-slate-200">
+      <div className="no-scrollbar flex max-w-full gap-1 overflow-x-auto rounded-xl bg-white p-1 ring-1 ring-slate-200">
         {(
           [
             { key: "absensi", label: "Absensi" },
@@ -54,8 +58,8 @@ export function PeriodeSelector({
             onClick={() => go({ tab: t.key })}
             className={
               tab === t.key
-                ? "rounded-lg bg-emerald-600 px-4 py-1.5 text-sm font-semibold text-white"
-                : "rounded-lg px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
+                ? "shrink-0 whitespace-nowrap rounded-lg bg-emerald-600 px-4 py-1.5 text-sm font-semibold text-white"
+                : "shrink-0 whitespace-nowrap rounded-lg px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
             }
           >
             {t.label}
@@ -64,7 +68,7 @@ export function PeriodeSelector({
       </div>
 
       {/* Periode */}
-      <div className="flex gap-1 rounded-xl bg-white p-1 ring-1 ring-slate-200">
+      <div className="no-scrollbar flex max-w-full gap-1 overflow-x-auto rounded-xl bg-white p-1 ring-1 ring-slate-200">
         {(
           [
             { key: "bulan", label: "Bulan" },
@@ -77,8 +81,8 @@ export function PeriodeSelector({
             onClick={() => go({ periode: p.key })}
             className={
               periode === p.key
-                ? "rounded-lg bg-slate-800 px-4 py-1.5 text-sm font-semibold text-white"
-                : "rounded-lg px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
+                ? "shrink-0 whitespace-nowrap rounded-lg bg-slate-800 px-4 py-1.5 text-sm font-semibold text-white"
+                : "shrink-0 whitespace-nowrap rounded-lg px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
             }
           >
             {p.label}
@@ -92,11 +96,11 @@ export function PeriodeSelector({
           type="month"
           value={nilai && /^\d{4}-\d{2}$/.test(nilai) ? nilai : bulanIni}
           onChange={(e) => go({ nilai: e.target.value })}
-          className="input w-auto py-1.5"
+          className="input w-full py-1.5 sm:w-auto"
         />
       )}
       {periode === "semester" && (
-        <div className="flex gap-1 rounded-xl bg-white p-1 ring-1 ring-slate-200">
+        <div className="no-scrollbar flex max-w-full gap-1 overflow-x-auto rounded-xl bg-white p-1 ring-1 ring-slate-200">
           {(
             [
               { key: "ganjil", label: "Ganjil" },
@@ -108,8 +112,8 @@ export function PeriodeSelector({
               onClick={() => go({ nilai: s.key })}
               className={
                 (nilai ?? "ganjil") === s.key
-                  ? "rounded-lg bg-slate-800 px-4 py-1.5 text-sm font-semibold text-white"
-                  : "rounded-lg px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
+                  ? "shrink-0 whitespace-nowrap rounded-lg bg-slate-800 px-4 py-1.5 text-sm font-semibold text-white"
+                  : "shrink-0 whitespace-nowrap rounded-lg px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
               }
             >
               {s.label}

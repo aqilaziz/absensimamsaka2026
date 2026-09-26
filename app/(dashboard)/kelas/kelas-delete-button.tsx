@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { hapusKelas } from "./actions";
+import { konfirmasiHapus, toastGagal, toastSukses } from "@/lib/swal";
 
 export function KelasDeleteButton({
   kelasId,
@@ -15,17 +16,21 @@ export function KelasDeleteButton({
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
-  function onDelete() {
-    if (
-      !confirm(
-        `Hapus kelas ${nama} beserta seluruh santri, absensi, dan tugasnya?`,
-      )
-    )
-      return;
+  async function onDelete() {
+    const yakin = await konfirmasiHapus({
+      teks: `Hapus kelas ${nama} beserta seluruh santri, absensi, dan tugasnya?`,
+    });
+    if (!yakin) return;
     setError(null);
     startTransition(async () => {
       const res = await hapusKelas(kelasId);
-      if (!res.ok) setError(res.error ?? "Gagal menghapus");
+      if (!res.ok) {
+        const pesan = res.error ?? "Gagal menghapus";
+        setError(pesan);
+        toastGagal(pesan);
+        return;
+      }
+      toastSukses(`Kelas ${nama} dihapus`);
       router.refresh();
     });
   }

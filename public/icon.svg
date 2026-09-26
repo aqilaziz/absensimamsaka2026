@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Absensi Santri">
+  <rect width="512" height="512" rx="112" fill="#022c22" />
+  <rect x="128" y="112" width="256" height="288" rx="32" fill="#ecfdf5" />
+  <rect x="128" y="112" width="256" height="72" rx="32" fill="#10b981" />
+  <rect x="128" y="152" width="256" height="32" fill="#10b981" />
+  <rect x="176" y="64" width="32" height="88" rx="16" fill="#022c22" />
+  <rect x="304" y="64" width="32" height="88" rx="16" fill="#022c22" />
+  <path d="M196 268l34 34 68-72" fill="none" stroke="#059669" stroke-width="34" stroke-linecap="round" stroke-linejoin="round" />
+  <rect x="176" y="344" width="160" height="24" rx="12" fill="#a7f3d0" />
+</svg>

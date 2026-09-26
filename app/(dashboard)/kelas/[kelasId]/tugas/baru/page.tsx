@@ -36,14 +36,16 @@ export default async function TugasBaruPage({
     <div className="space-y-6">
       <KelasHeader kelas={kelas} active="tugas" />
       <div className="max-w-2xl space-y-4">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <Link
             href={`/kelas/${kelasId}/tugas`}
-            className="text-sm text-slate-400 hover:text-slate-600"
+            className="shrink-0 text-sm text-slate-400 hover:text-slate-600"
           >
             ← Daftar tugas
           </Link>
-          <h2 className="text-lg font-semibold text-slate-900">Tugas Baru</h2>
+          <h2 className="break-words text-lg font-semibold text-slate-900">
+            Tugas Baru
+          </h2>
         </div>
         <TugasForm kelasId={kelasId} />
       </div>

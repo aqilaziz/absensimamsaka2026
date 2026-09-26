@@ -20,16 +20,14 @@ export default async function DashboardLayout({
 }) {
   const supabase = await createClient();
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .single();
-
-  const { data: tahunAktif } = await supabase
-    .from("tahun_pelajaran")
-    .select("*")
-    .eq("status", "aktif")
-    .maybeSingle();
+  const [{ data: profile }, { data: tahunAktif }] = await Promise.all([
+    supabase.from("profiles").select("*").single(),
+    supabase
+      .from("tahun_pelajaran")
+      .select("*")
+      .eq("status", "aktif")
+      .maybeSingle(),
+  ]);
 
   let kelasList: Kelas[] = [];
   let semesters: Semester[] = [];
@@ -163,9 +161,9 @@ export default async function DashboardLayout({
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Topbar mobile */}
-        <header className="flex items-center gap-3 overflow-x-auto bg-emerald-950 px-4 py-3 md:hidden">
+        <header className="no-scrollbar sticky top-0 z-20 flex items-center gap-3 overflow-x-auto bg-emerald-950 px-4 py-3 md:hidden">
           <span className="shrink-0 font-bold text-white">Absensi Santri</span>
-          <nav className="flex items-center gap-1 text-sm">
+          <nav className="flex shrink-0 items-center gap-1 text-sm">
             <NavLink href="/" exact>
               Dashboard
             </NavLink>
@@ -177,7 +175,7 @@ export default async function DashboardLayout({
           </nav>
         </header>
 
-        <main className="flex-1 p-4 md:p-8">{children}</main>
+        <main className="min-w-0 flex-1 p-4 sm:p-6 md:p-8">{children}</main>
       </div>
     </div>
   );

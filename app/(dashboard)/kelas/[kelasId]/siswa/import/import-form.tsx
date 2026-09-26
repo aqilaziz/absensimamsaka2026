@@ -81,7 +81,10 @@ export function ImportForm({
                 {parsed.map((s) => {
                   const duplikat = sudahAda.has(s.nama.toLowerCase());
                   return (
-                    <tr key={s.urutan} className={duplikat ? "bg-amber-50" : ""}>
+                    <tr
+                      key={s.urutan}
+                      className={duplikat ? "bg-amber-50" : ""}
+                    >
                       <td className="td text-slate-400">{s.urutan}</td>
                       <td className="td">
                         {s.nama}
@@ -103,7 +106,7 @@ export function ImportForm({
               {error}
             </p>
           )}
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             <button
               onClick={onSimpan}
               disabled={pending}

@@ -61,7 +61,7 @@ export function KelasForm({
       onSubmit={onSubmit}
       className="flex flex-wrap items-end gap-2 rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200"
     >
-      <label className="block">
+      <label className="block w-full sm:w-auto">
         <span className="mb-1 block text-xs font-medium text-slate-600">
           Nama kelas (mis. XII IPA 1)
         </span>
@@ -69,11 +69,11 @@ export function KelasForm({
           name="nama"
           required
           defaultValue={kelas?.nama}
-          className="input w-56"
+          className="input w-full sm:w-56"
           placeholder="XII IPA 1"
         />
       </label>
-      <label className="block">
+      <label className="block w-full sm:w-auto">
         <span className="mb-1 block text-xs font-medium text-slate-600">
           Semester
         </span>
@@ -81,7 +81,7 @@ export function KelasForm({
           name="semester_id"
           required
           defaultValue={kelas?.semester_id ?? semesterAwal ?? ""}
-          className="input w-64"
+          className="input w-full sm:w-64"
         >
           {semesters.map((s) => (
             <option key={s.id} value={s.id}>

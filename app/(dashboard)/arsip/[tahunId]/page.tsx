@@ -14,21 +14,21 @@ export default async function ArsipDetailPage({
   const { tahunId } = await params;
   const supabase = await createClient();
 
-  const { data: tahunData } = await supabase
-    .from("tahun_pelajaran")
-    .select("*")
-    .eq("id", tahunId)
-    .maybeSingle();
+  const [{ data: tahunData }, { data: kelasData }] = await Promise.all([
+    supabase
+      .from("tahun_pelajaran")
+      .select("*")
+      .eq("id", tahunId)
+      .maybeSingle(),
+    supabase
+      .from("kelas")
+      .select("*")
+      .eq("tahun_pelajaran_id", tahunId)
+      .order("nama"),
+  ]);
 
   if (!tahunData) notFound();
   const tahun = tahunData as TahunPelajaran;
-
-  const { data: kelasData } = await supabase
-    .from("kelas")
-    .select("*")
-    .eq("tahun_pelajaran_id", tahunId)
-    .order("nama");
-
   const kelasList = (kelasData ?? []) as Kelas[];
 
   const kelasIds = kelasList.map((k) => k.id);
@@ -52,7 +52,9 @@ export default async function ArsipDetailPage({
           ← Arsip
         </Link>
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-bold text-slate-900">{tahun.nama}</h1>
+          <h1 className="break-words text-xl font-bold text-slate-900 sm:text-2xl">
+            {tahun.nama}
+          </h1>
           <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">
             <Lock size={12} /> Terkunci
           </span>
@@ -72,11 +74,11 @@ export default async function ArsipDetailPage({
             const santriKelas = siswaList.filter((s) => s.kelas_id === k.id);
             return (
               <div key={k.id} className="card space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h2 className="text-base font-semibold text-slate-900">
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                  <h2 className="break-words text-base font-semibold text-slate-900">
                     {k.nama}
                   </h2>
-                  <div className="flex gap-2 text-xs">
+                  <div className="flex flex-wrap gap-2 text-xs">
                     <Link
                       href={`/kelas/${k.id}/absensi`}
                       className="rounded-full bg-emerald-50 px-3 py-1 font-medium text-emerald-700 hover:bg-emerald-100"

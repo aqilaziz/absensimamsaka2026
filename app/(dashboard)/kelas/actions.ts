@@ -62,7 +62,7 @@ export async function createKelas(input: unknown): Promise<ActionResult> {
     }
     return { ok: false, error: error.message };
   }
-  revalidatePath("/", "layout");
+  revalidatePath("/kelas", "layout");
   return { ok: true };
 }
 
@@ -92,7 +92,7 @@ export async function updateKelas(
     }
     return { ok: false, error: error.message };
   }
-  revalidatePath("/", "layout");
+  revalidatePath("/kelas", "layout");
   return { ok: true };
 }
 
@@ -103,6 +103,6 @@ export async function hapusKelas(kelasId: string): Promise<ActionResult> {
 
   const { error } = await supabase.from("kelas").delete().eq("id", kelasId);
   if (error) return { ok: false, error: error.message };
-  revalidatePath("/", "layout");
+  revalidatePath("/kelas", "layout");
   return { ok: true };
 }

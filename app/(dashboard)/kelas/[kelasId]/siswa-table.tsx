@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { hapusBanyakSiswa, hapusSiswa, updateSiswa } from "./actions";
 import { NamaSantriLink } from "@/components/nama-santri-link";
+import { konfirmasiHapus, toastGagal, toastSukses } from "@/lib/swal";
 import type { Siswa } from "@/lib/types";
 
 export function SiswaTable({
@@ -31,22 +32,24 @@ export function SiswaTable({
     );
   }
 
-  function onHapusTerpilih() {
+  async function onHapusTerpilih() {
     if (terpilih.length === 0) return;
-    if (
-      !confirm(
-        `Hapus ${terpilih.length} santri terpilih beserta seluruh absensi dan nilainya?`,
-      )
-    )
-      return;
+    const yakin = await konfirmasiHapus({
+      teks: `Hapus ${terpilih.length} santri terpilih beserta seluruh absensi dan nilainya?`,
+      tombol: `Ya, hapus ${terpilih.length}`,
+    });
+    if (!yakin) return;
     setBulkError(null);
     startBulk(async () => {
       const res = await hapusBanyakSiswa({ siswa_ids: terpilih });
       if (!res.ok) {
-        setBulkError(res.error ?? "Gagal menghapus");
+        const pesan = res.error ?? "Gagal menghapus";
+        setBulkError(pesan);
+        toastGagal(pesan);
         return;
       }
       setTerpilih([]);
+      toastSukses(`${terpilih.length} santri dihapus`);
       router.refresh();
     });
   }
@@ -151,13 +154,21 @@ function SiswaRow({
     });
   }
 
-  function onDelete() {
-    if (!confirm(`Hapus ${siswa.nama} beserta seluruh absensi dan nilainya?`))
-      return;
+  async function onDelete() {
+    const yakin = await konfirmasiHapus({
+      teks: `Hapus ${siswa.nama} beserta seluruh absensi dan nilainya?`,
+    });
+    if (!yakin) return;
     setError(null);
     startTransition(async () => {
       const res = await hapusSiswa(siswa.id);
-      if (!res.ok) setError(res.error ?? "Gagal menghapus");
+      if (!res.ok) {
+        const pesan = res.error ?? "Gagal menghapus";
+        setError(pesan);
+        toastGagal(pesan);
+        return;
+      }
+      toastSukses(`${siswa.nama} dihapus`);
       router.refresh();
     });
   }
@@ -168,18 +179,21 @@ function SiswaRow({
         {aktif && <td className="td" />}
         <td className="td">{no}</td>
         <td className="td" colSpan={2}>
-          <form onSubmit={onSave} className="flex flex-wrap items-center gap-2">
+          <form
+            onSubmit={onSave}
+            className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center"
+          >
             <input
               name="nama"
               defaultValue={siswa.nama}
               required
-              className="input w-56 py-1.5"
+              className="input w-full py-1.5 sm:w-56"
             />
             <input
               name="nis"
               defaultValue={siswa.nis ?? ""}
               placeholder="NIS (opsional)"
-              className="input w-36 py-1.5"
+              className="input w-full py-1.5 sm:w-36"
             />
             <button
               type="submit"

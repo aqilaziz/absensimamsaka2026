@@ -48,15 +48,15 @@ export default async function TugasDetailPage({
     <div className="space-y-6">
       <KelasHeader kelas={kelas} active="tugas" />
 
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+        <div className="min-w-0">
           <Link
             href={`/kelas/${kelasId}/tugas`}
             className="text-sm text-slate-400 hover:text-slate-600"
           >
             ← Daftar tugas
           </Link>
-          <h2 className="mt-1 text-xl font-bold text-slate-900">
+          <h2 className="mt-1 break-words text-lg font-bold text-slate-900 sm:text-xl">
             {tugas.judul}
           </h2>
           <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">

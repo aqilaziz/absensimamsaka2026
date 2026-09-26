@@ -2,8 +2,32 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getSupabaseEnv } from "./env";
 
+/**
+ * Request yang dilewati lebih cepat.
+ *
+ * Next.js menembakkan request saat tautan di-hover/di-prefetch. Memanggil
+ * `auth.getUser()` (round-trip jaringan ke Supabase) untuk setiap prefetch
+ * membuat navigasi terasa lambat, padahal halaman tujuan akan tetap
+ * divalidasi sesinya ketika benar-benar dibuka. Jadi prefetch cukup
+ * dilewatkan tanpa pengecekan sesi.
+ */
+function adalahPrefetch(request: NextRequest) {
+  const h = request.headers;
+  return (
+    h.get("next-router-prefetch") === "1" ||
+    h.get("purpose") === "prefetch" ||
+    h.get("x-purpose") === "prefetch"
+  );
+}
+
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
+
+  // Prefetch: lewati pemeriksaan sesi (tidak ada cookie yang perlu disegarkan
+  // pada request prefetch, dan hasilnya tidak dipakai untuk redirect).
+  if (adalahPrefetch(request)) {
+    return { response, user: null };
+  }
 
   let supabaseUrl: string;
   let supabaseKey: string;

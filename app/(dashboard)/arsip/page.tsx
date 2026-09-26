@@ -21,7 +21,7 @@ export default async function ArsipPage() {
   return (
     <div className="max-w-4xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Arsip</h1>
+        <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Arsip</h1>
         <p className="text-sm text-slate-500">
           Tahun pelajaran lama — data terkunci (read-only) namun tetap bisa
           dilihat.
@@ -41,9 +41,9 @@ export default async function ArsipPage() {
               href={`/arsip/${t.id}`}
               className="card block transition hover:ring-emerald-300"
             >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-3">
-                  <span className="text-lg font-semibold text-slate-900">
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                <div className="flex min-w-0 flex-wrap items-center gap-3">
+                  <span className="break-words text-lg font-semibold text-slate-900">
                     {t.nama}
                   </span>
                   <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500">

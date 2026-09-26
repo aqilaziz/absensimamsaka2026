@@ -14,7 +14,7 @@ export function GrafikBulanan({ data }: { data: BulananSiswa[] }) {
       <p className="mb-4 text-sm font-semibold text-slate-900">
         Persentase hadir per bulan
       </p>
-      <div className="flex h-36 items-end gap-3">
+      <div className="no-scrollbar -mx-1 flex h-36 items-end gap-3 overflow-x-auto px-1">
         {data.map((b) => {
           const total = Number(b.total_hari) || 1;
           const segmen = [

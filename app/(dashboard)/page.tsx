@@ -19,15 +19,14 @@ import {
 export default async function DashboardPage() {
   const supabase = await createClient();
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .single();
-  const { data: tahunAktif } = await supabase
-    .from("tahun_pelajaran")
-    .select("*")
-    .eq("status", "aktif")
-    .maybeSingle();
+  const [{ data: profile }, { data: tahunAktif }] = await Promise.all([
+    supabase.from("profiles").select("*").single(),
+    supabase
+      .from("tahun_pelajaran")
+      .select("*")
+      .eq("status", "aktif")
+      .maybeSingle(),
+  ]);
 
   const profil = profile as Profile | null;
   const tahun = tahunAktif as TahunPelajaran | null;
@@ -84,7 +83,7 @@ export default async function DashboardPage() {
 
   if (!tahun) {
     return (
-      <div className="mx-auto max-w-lg rounded-2xl bg-white p-10 text-center shadow-sm ring-1 ring-slate-200">
+      <div className="mx-auto w-full max-w-lg rounded-2xl bg-white p-6 text-center shadow-sm ring-1 ring-slate-200 sm:p-10">
         <GraduationCap className="mx-auto text-emerald-600" size={40} />
         <h1 className="mt-4 text-xl font-bold text-slate-900">
           Selamat datang, {profil?.nama ?? "Guru"}
@@ -106,7 +105,7 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">
+        <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">
           Ahlan, {profil?.nama ?? "Guru"}
         </h1>
         <p className="text-sm text-slate-500">
@@ -117,7 +116,7 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <StatCard
           icon={<Users size={20} />}
           label="Kelas"
@@ -213,9 +212,11 @@ function StatCard({
   value: number;
 }) {
   return (
-    <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+    <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-5">
       <div className="flex items-center gap-2 text-emerald-600">{icon}</div>
-      <p className="mt-3 text-2xl font-bold text-slate-900">{value}</p>
+      <p className="mt-3 text-xl font-bold text-slate-900 sm:text-2xl">
+        {value}
+      </p>
       <p className="text-xs text-slate-500">{label}</p>
     </div>
   );

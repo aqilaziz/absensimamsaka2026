@@ -169,6 +169,11 @@ export interface KelasDetail extends Kelas {
   semester?: Semester;
 }
 
+/** Hasil pencarian santri: data santri + kelas induknya (beserta tahun). */
+export interface HasilCariSantri extends Siswa {
+  kelas: KelasDetail;
+}
+
 export interface ActionResult {
   ok: boolean;
   error?: string;

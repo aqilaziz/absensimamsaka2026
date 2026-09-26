@@ -46,12 +46,15 @@ export function NisForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-wrap items-center gap-2">
+    <form
+      onSubmit={onSubmit}
+      className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center"
+    >
       <input
         name="nis"
         defaultValue={nis ?? ""}
         placeholder="Nomor Induk Santri"
-        className="input w-44 py-1.5"
+        className="input w-full py-1.5 sm:w-44"
       />
       <button type="submit" disabled={pending} className="btn-primary py-1.5">
         Simpan

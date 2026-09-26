@@ -93,7 +93,7 @@ export default async function RekapPage({
         nilai={nilai}
       />
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <p className="text-sm text-slate-600">
           <span className="font-semibold text-slate-900">{rentang.label}</span>{" "}
           <span className="text-slate-400">

@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createTugas, updateTugas, hapusTugas } from "./actions";
 import type { Tugas } from "@/lib/types";
+import { konfirmasiHapus, toastGagal, toastSukses } from "@/lib/swal";
 import { format } from "date-fns";
 
 export function TugasForm({
@@ -56,17 +57,22 @@ export function TugasForm({
     });
   }
 
-  function onHapus() {
+  async function onHapus() {
     if (!tugas) return;
-    if (!confirm(`Hapus tugas "${tugas.judul}" beserta seluruh pengumpulannya?`))
-      return;
+    const yakin = await konfirmasiHapus({
+      teks: `Hapus tugas "${tugas.judul}" beserta seluruh pengumpulannya?`,
+    });
+    if (!yakin) return;
     setError(null);
     startTransition(async () => {
       const res = await hapusTugas(tugas.id, kelasId);
       if (!res.ok) {
-        setError(res.error ?? "Gagal menghapus");
+        const pesan = res.error ?? "Gagal menghapus";
+        setError(pesan);
+        toastGagal(pesan);
         return;
       }
+      toastSukses("Tugas dihapus");
       router.push(`/kelas/${kelasId}/tugas`);
       router.refresh();
     });
@@ -174,7 +180,9 @@ export function TugasForm({
       </div>
 
       {error && (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>
+        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+          {error}
+        </p>
       )}
 
       <div className="flex flex-wrap gap-2">

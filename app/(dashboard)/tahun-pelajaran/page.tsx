@@ -21,9 +21,11 @@ export default async function TahunPelajaranPage() {
 
   return (
     <div className="max-w-4xl space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Tahun Pelajaran</h1>
+          <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">
+            Tahun Pelajaran
+          </h1>
           <p className="text-sm text-slate-500">
             Satu tahun aktif; tahun lama tersimpan sebagai arsip.
           </p>
@@ -41,9 +43,9 @@ export default async function TahunPelajaranPage() {
       <div className="space-y-3">
         {tahunList.map((t) => (
           <div key={t.id} className="card space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-3">
-                <span className="text-lg font-semibold text-slate-900">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+              <div className="flex min-w-0 flex-wrap items-center gap-3">
+                <span className="break-words text-lg font-semibold text-slate-900">
                   {t.nama}
                 </span>
                 {t.status === "aktif" ? (
@@ -56,7 +58,7 @@ export default async function TahunPelajaranPage() {
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <TahunForm tahun={t} />
                 <TahunRowActions id={t.id} status={t.status} nama={t.nama} />
                 {t.status === "arsip" && (

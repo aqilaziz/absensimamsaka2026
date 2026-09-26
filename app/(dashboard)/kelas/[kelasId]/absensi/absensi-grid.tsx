@@ -16,10 +16,26 @@ const STATUS_LIST: {
   label: string;
   aktifClass: string;
 }[] = [
-  { key: "hadir", label: "Hadir", aktifClass: "bg-emerald-600 text-white border-emerald-600" },
-  { key: "sakit", label: "Sakit", aktifClass: "bg-amber-500 text-white border-amber-500" },
-  { key: "izin", label: "Izin", aktifClass: "bg-sky-500 text-white border-sky-500" },
-  { key: "alpha", label: "Alpha", aktifClass: "bg-red-600 text-white border-red-600" },
+  {
+    key: "hadir",
+    label: "Hadir",
+    aktifClass: "bg-emerald-600 text-white border-emerald-600",
+  },
+  {
+    key: "sakit",
+    label: "Sakit",
+    aktifClass: "bg-amber-500 text-white border-amber-500",
+  },
+  {
+    key: "izin",
+    label: "Izin",
+    aktifClass: "bg-sky-500 text-white border-sky-500",
+  },
+  {
+    key: "alpha",
+    label: "Alpha",
+    aktifClass: "bg-red-600 text-white border-red-600",
+  },
 ];
 
 export function AbsensiGrid({
@@ -46,7 +62,9 @@ export function AbsensiGrid({
     }
     return map;
   });
-  const [pesan, setPesan] = useState<{ ok: boolean; teks: string } | null>(null);
+  const [pesan, setPesan] = useState<{ ok: boolean; teks: string } | null>(
+    null,
+  );
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -57,7 +75,7 @@ export function AbsensiGrid({
         status,
         keterangan:
           status === "sakit" || status === "izin"
-            ? prev[siswaId]?.keterangan ?? ""
+            ? (prev[siswaId]?.keterangan ?? "")
             : "",
       },
     }));
@@ -196,11 +214,11 @@ export function AbsensiGrid({
       </div>
 
       {aktif && siswaList.length > 0 && (
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
           <button
             onClick={onSimpan}
             disabled={pending}
-            className="btn-primary"
+            className="btn-primary w-full sm:w-auto"
           >
             {pending ? "Menyimpan…" : "Simpan Absensi"}
           </button>

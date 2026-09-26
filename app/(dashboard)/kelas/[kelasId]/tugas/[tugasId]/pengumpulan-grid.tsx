@@ -4,12 +4,7 @@ import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { simpanPengumpulan } from "../actions";
 import { NamaSantriLink } from "@/components/nama-santri-link";
-import type {
-  Pengumpulan,
-  Siswa,
-  StatusKumpul,
-  Tugas,
-} from "@/lib/types";
+import type { Pengumpulan, Siswa, StatusKumpul, Tugas } from "@/lib/types";
 
 export type PengumpulanRow = Pengumpulan & { siswa: Siswa };
 
@@ -41,7 +36,9 @@ export function PengumpulanGrid({
     }
     return map;
   });
-  const [pesan, setPesan] = useState<{ ok: boolean; teks: string } | null>(null);
+  const [pesan, setPesan] = useState<{ ok: boolean; teks: string } | null>(
+    null,
+  );
   const [pending, startTransition] = useTransition();
   const router = useRouter();
   const nilaiRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -49,7 +46,10 @@ export function PengumpulanGrid({
   const tipeNilai = tugas.tipe === "nilai";
 
   function update(siswaId: string, patch: Partial<RowState>) {
-    setState((prev) => ({ ...prev, [siswaId]: { ...prev[siswaId], ...patch } }));
+    setState((prev) => ({
+      ...prev,
+      [siswaId]: { ...prev[siswaId], ...patch },
+    }));
     setPesan(null);
   }
 
@@ -133,19 +133,23 @@ export function PengumpulanGrid({
     });
   }
 
-  const jumlahSudah = rows.filter((r) => state[r.siswa_id].status !== "belum").length;
+  const jumlahSudah = rows.filter(
+    (r) => state[r.siswa_id].status !== "belum",
+  ).length;
   const nilaiTerisi = rows
     .map((r) => state[r.siswa_id].nilai)
     .filter((n) => n !== "")
     .map(Number);
   const rataNilai =
     nilaiTerisi.length > 0
-      ? Math.round((nilaiTerisi.reduce((a, b) => a + b, 0) / nilaiTerisi.length) * 10) / 10
+      ? Math.round(
+          (nilaiTerisi.reduce((a, b) => a + b, 0) / nilaiTerisi.length) * 10,
+        ) / 10
       : null;
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <p className="text-sm text-slate-600">
           <b className="text-slate-900">{jumlahSudah}</b>/{rows.length} sudah
           {tipeNilai && rataNilai != null && (
@@ -156,14 +160,17 @@ export function PengumpulanGrid({
           )}
         </p>
         {aktif && (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => tandaiSemua(lewatTenggat ? "terlambat" : "sudah")}
-              className="btn-secondary"
+              className="btn-secondary shrink-0"
             >
               Tandai semua Sudah
             </button>
-            <button onClick={() => tandaiSemua("belum")} className="btn-secondary">
+            <button
+              onClick={() => tandaiSemua("belum")}
+              className="btn-secondary shrink-0"
+            >
               Reset
             </button>
           </div>
@@ -211,7 +218,9 @@ export function PengumpulanGrid({
                           onClick={() => toggleTerlambat(r.siswa_id)}
                           className="text-[11px] text-slate-400 underline decoration-dotted hover:text-slate-600"
                         >
-                          {st.status === "terlambat" ? "tepat waktu" : "tandai terlambat"}
+                          {st.status === "terlambat"
+                            ? "tepat waktu"
+                            : "tandai terlambat"}
                         </button>
                       )}
                     </div>
@@ -228,7 +237,9 @@ export function PengumpulanGrid({
                         step="any"
                         value={st.nilai}
                         disabled={!aktif}
-                        onChange={(e) => onNilaiChange(r.siswa_id, e.target.value)}
+                        onChange={(e) =>
+                          onNilaiChange(r.siswa_id, e.target.value)
+                        }
                         onKeyDown={(e) => {
                           if (e.key === "Enter") {
                             e.preventDefault();
@@ -249,7 +260,9 @@ export function PengumpulanGrid({
                     <input
                       value={st.catatan}
                       disabled={!aktif}
-                      onChange={(e) => update(r.siswa_id, { catatan: e.target.value })}
+                      onChange={(e) =>
+                        update(r.siswa_id, { catatan: e.target.value })
+                      }
                       placeholder="opsional"
                       className="input py-1.5"
                     />
@@ -262,12 +275,18 @@ export function PengumpulanGrid({
       </div>
 
       {aktif && rows.length > 0 && (
-        <div className="flex items-center gap-3">
-          <button onClick={onSimpan} disabled={pending} className="btn-primary">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+          <button
+            onClick={onSimpan}
+            disabled={pending}
+            className="btn-primary w-full sm:w-auto"
+          >
             {pending ? "Menyimpan…" : "Simpan"}
           </button>
           {pesan && (
-            <p className={`text-sm ${pesan.ok ? "text-emerald-600" : "text-red-600"}`}>
+            <p
+              className={`text-sm ${pesan.ok ? "text-emerald-600" : "text-red-600"}`}
+            >
               {pesan.teks}
             </p>
           )}

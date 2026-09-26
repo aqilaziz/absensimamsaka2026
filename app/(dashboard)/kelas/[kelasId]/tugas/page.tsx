@@ -13,23 +13,24 @@ export default async function TugasListPage({
   const { kelasId } = await params;
   const supabase = await createClient();
 
-  const { data: kelasData } = await supabase
-    .from("kelas")
-    .select(
-      "*, tahun_pelajaran(*), semester:semester!kelas_semester_id_fkey(*)",
-    )
-    .eq("id", kelasId)
-    .maybeSingle();
+  const [{ data: kelasData }, { data: tugasData }] = await Promise.all([
+    supabase
+      .from("kelas")
+      .select(
+        "*, tahun_pelajaran(*), semester:semester!kelas_semester_id_fkey(*)",
+      )
+      .eq("id", kelasId)
+      .maybeSingle(),
+    supabase
+      .from("v_ringkasan_tugas")
+      .select("*")
+      .eq("kelas_id", kelasId)
+      .order("tgl_diberikan", { ascending: false }),
+  ]);
 
   if (!kelasData) notFound();
   const kelas = kelasData as unknown as KelasDetail;
   const aktif = kelas.tahun_pelajaran.status === "aktif";
-
-  const { data: tugasData } = await supabase
-    .from("v_ringkasan_tugas")
-    .select("*")
-    .eq("kelas_id", kelasId)
-    .order("tgl_diberikan", { ascending: false });
 
   const tugasList = (tugasData ?? []) as RingkasanTugas[];
 
@@ -37,12 +38,15 @@ export default async function TugasListPage({
     <div className="space-y-6">
       <KelasHeader kelas={kelas} active="tugas" />
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <p className="text-sm text-slate-500">
           {tugasList.length} tugas/kegiatan
         </p>
         {aktif && (
-          <Link href={`/kelas/${kelasId}/tugas/baru`} className="btn-primary">
+          <Link
+            href={`/kelas/${kelasId}/tugas/baru`}
+            className="btn-primary w-full text-center sm:w-auto"
+          >
             + Buat Tugas
           </Link>
         )}
@@ -68,10 +72,12 @@ export default async function TugasListPage({
               href={`/kelas/${kelasId}/tugas/${t.tugas_id}`}
               className="card block transition hover:ring-emerald-300"
             >
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="font-semibold text-slate-900">{t.judul}</p>
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="break-words font-semibold text-slate-900">
+                      {t.judul}
+                    </p>
                     {t.tipe === "nilai" ? (
                       <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-semibold text-sky-700">
                         Nilai · maks {t.nilai_maks}
@@ -88,7 +94,7 @@ export default async function TugasListPage({
                       ` · Tenggat ${formatTanggal(t.tgl_tenggat)}`}
                   </p>
                 </div>
-                <div className="text-right text-sm">
+                <div className="text-left text-sm sm:text-right">
                   <p className="font-semibold text-slate-900">
                     {t.sudah}/{t.total_siswa}{" "}
                     <span className="font-normal text-slate-400">

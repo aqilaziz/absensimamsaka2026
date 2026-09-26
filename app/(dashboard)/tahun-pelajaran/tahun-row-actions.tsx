@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { arsipkanTahun, hapusTahun } from "./actions";
+import { konfirmasiHapus, toastGagal, toastSukses } from "@/lib/swal";
 import type { StatusTahun } from "@/lib/types";
 
 export function TahunRowActions({
@@ -18,27 +19,42 @@ export function TahunRowActions({
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
-  function onArsip() {
-    if (!confirm(`Arsipkan tahun ${nama}? Data tidak bisa diubah lagi.`)) return;
+  async function onArsip() {
+    const yakin = await konfirmasiHapus({
+      judul: "Arsipkan tahun ini?",
+      teks: `Arsipkan tahun ${nama}? Data tidak bisa diubah lagi.`,
+      tombol: "Ya, arsipkan",
+    });
+    if (!yakin) return;
     setError(null);
     startTransition(async () => {
       const res = await arsipkanTahun(id);
-      if (!res.ok) setError(res.error ?? "Gagal mengarsipkan");
+      if (!res.ok) {
+        const pesan = res.error ?? "Gagal mengarsipkan";
+        setError(pesan);
+        toastGagal(pesan);
+        return;
+      }
+      toastSukses(`Tahun ${nama} diarsipkan`);
       router.refresh();
     });
   }
 
-  function onHapus() {
-    if (
-      !confirm(
-        `Hapus tahun ${nama} beserta SELURUH data kelas, santri, absensi, dan tugas di dalamnya? Tindakan ini tidak bisa dibatalkan.`,
-      )
-    )
-      return;
+  async function onHapus() {
+    const yakin = await konfirmasiHapus({
+      teks: `Hapus tahun ${nama} beserta SELURUH data kelas, santri, absensi, dan tugas di dalamnya? Tindakan ini tidak bisa dibatalkan.`,
+    });
+    if (!yakin) return;
     setError(null);
     startTransition(async () => {
       const res = await hapusTahun(id);
-      if (!res.ok) setError(res.error ?? "Gagal menghapus");
+      if (!res.ok) {
+        const pesan = res.error ?? "Gagal menghapus";
+        setError(pesan);
+        toastGagal(pesan);
+        return;
+      }
+      toastSukses(`Tahun ${nama} dihapus`);
       router.refresh();
     });
   }
@@ -46,7 +62,7 @@ export function TahunRowActions({
   if (status !== "aktif") return null;
 
   return (
-    <span className="inline-flex items-center gap-2">
+    <span className="inline-flex flex-wrap items-center gap-2">
       <button
         onClick={onArsip}
         disabled={pending}
