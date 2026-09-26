@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Download } from "lucide-react";
+import { FileSpreadsheet } from "lucide-react";
 
 export function ExportExcelButton({
   rows,
@@ -30,9 +30,10 @@ export function ExportExcelButton({
   return (
     <button onClick={onExport} disabled={loading} className="btn-secondary">
       <span className="inline-flex items-center gap-1.5">
-        <Download size={14} />
+        <FileSpreadsheet size={15} />
         {loading ? "Menyiapkan…" : "Export Excel"}
       </span>
     </button>
   );
 }
+
