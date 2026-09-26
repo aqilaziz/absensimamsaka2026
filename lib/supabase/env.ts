@@ -19,24 +19,29 @@ export function getSupabaseEnv(): { url: string; key: string } {
 
 // Kompatibilitas: modul lama mengimpor konstanta ini langsung.
 // Diakses malas agar import-time tidak meledak saat env belum ada.
-export const supabaseUrl: string = new Proxy({} as { v?: string }, {
-  get(_t, prop) {
-    const { url } = getSupabaseEnv();
-    const value = (url as unknown as Record<string | symbol, unknown>)[prop];
-    if (typeof value === "string") return value;
-    if (prop === "toString" || prop === Symbol.toPrimitive) return () => url;
-    if (prop === "valueOf") return () => url;
-    return url;
-  },
-}) as unknown as string;
+// Penting: method String (trim, toString, dsb.) harus mengembalikan fungsi
+// yang ter-bind ke string asli, bukan string-nya — kalau tidak,
+// supabase-js melempar "supabaseUrl.trim is not a function".
+function lazyString(read: () => string): string {
+  return new Proxy({} as Record<string | symbol, unknown>, {
+    get(_t, prop) {
+      const value = read();
+      if (prop === Symbol.toPrimitive) return () => value;
+      const member = (value as unknown as Record<string | symbol, unknown>)[
+        prop
+      ];
+      if (typeof member === "function") return member.bind(value);
+      return member;
+    },
+    has() {
+      return true;
+    },
+    getOwnPropertyDescriptor() {
+      return { configurable: true, enumerable: false };
+    },
+  }) as unknown as string;
+}
 
-export const supabaseKey: string = new Proxy({} as { v?: string }, {
-  get(_t, prop) {
-    const { key } = getSupabaseEnv();
-    const value = (key as unknown as Record<string | symbol, unknown>)[prop];
-    if (typeof value === "string") return value;
-    if (prop === "toString" || prop === Symbol.toPrimitive) return () => key;
-    if (prop === "valueOf") return () => key;
-    return key;
-  },
-}) as unknown as string;
+export const supabaseUrl: string = lazyString(() => getSupabaseEnv().url);
+
+export const supabaseKey: string = lazyString(() => getSupabaseEnv().key);

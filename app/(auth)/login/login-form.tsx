@@ -24,12 +24,14 @@ export function LoginForm() {
         },
       });
       if (error) {
+        console.error("[google-login]", error);
         setError("Gagal masuk dengan Google. Coba lagi.");
         setGooglePending(false);
       }
       // Jika berhasil, browser diarahkan ke Google lalu kembali
       // ke /auth/callback — tidak perlu router.replace di sini.
-    } catch {
+    } catch (e) {
+      console.error("[google-login-exception]", e);
       setError("Gagal masuk dengan Google. Coba lagi.");
       setGooglePending(false);
     }

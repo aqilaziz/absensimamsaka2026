@@ -16,4 +16,8 @@ export const updateSiswaSchema = z.object({
   nis: z.string().trim().max(30).nullable().optional(),
 });
 
+export const hapusBanyakSiswaSchema = z.object({
+  siswa_ids: z.array(z.string().uuid()).min(1, "Pilih minimal 1 santri"),
+});
+
 export type SiswaItem = z.infer<typeof siswaItemSchema>;

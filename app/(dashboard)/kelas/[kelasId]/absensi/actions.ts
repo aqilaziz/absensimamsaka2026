@@ -21,7 +21,9 @@ export async function simpanAbsensi(input: unknown): Promise<ActionResult> {
 
   const { data: kelasData } = await supabase
     .from("kelas")
-    .select("*, tahun_pelajaran(*), semester(*)")
+    .select(
+      "*, tahun_pelajaran(*), semester:semester!kelas_semester_id_fkey(*)",
+    )
     .eq("id", kelas_id)
     .maybeSingle();
   if (!kelasData) return { ok: false, error: "Kelas tidak ditemukan" };

@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { updateSiswaSchema } from "@/lib/validations/siswa";
+import {
+  updateSiswaSchema,
+  hapusBanyakSiswaSchema,
+} from "@/lib/validations/siswa";
 import type { ActionResult } from "@/lib/types";
 
 export async function updateSiswa(input: unknown): Promise<ActionResult> {
@@ -33,6 +36,21 @@ export async function updateSiswa(input: unknown): Promise<ActionResult> {
 export async function hapusSiswa(siswaId: string): Promise<ActionResult> {
   const supabase = await createClient();
   const { error } = await supabase.from("siswa").delete().eq("id", siswaId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function hapusBanyakSiswa(input: unknown): Promise<ActionResult> {
+  const parsed = hapusBanyakSiswaSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0].message };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("siswa")
+    .delete()
+    .in("id", parsed.data.siswa_ids);
   if (error) return { ok: false, error: error.message };
   revalidatePath("/", "layout");
   return { ok: true };

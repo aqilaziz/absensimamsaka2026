@@ -19,7 +19,9 @@ export default async function TugasDetailPage({
   const [{ data: kelasData }, { data: tugasData }] = await Promise.all([
     supabase
       .from("kelas")
-      .select("*, tahun_pelajaran(*), semester(*)")
+      .select(
+        "*, tahun_pelajaran(*), semester:semester!kelas_semester_id_fkey(*)",
+      )
       .eq("id", kelasId)
       .maybeSingle(),
     supabase.from("tugas").select("*").eq("id", tugasId).maybeSingle(),
