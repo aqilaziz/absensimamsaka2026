@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { NavLink } from "@/components/nav-link";
+import { IdentitasFooter } from "@/components/identitas-footer";
 import { logout } from "./actions";
 import { labelSemester, semesterAktifHariIni } from "@/lib/periode";
 import type { Kelas, Profile, Semester, TahunPelajaran } from "@/lib/types";
@@ -201,7 +202,10 @@ export default function DashboardLayout({
           </nav>
         </header>
 
-        <main className="min-w-0 flex-1 p-4 sm:p-6 md:p-8">{children}</main>
+        <main className="min-w-0 flex-1 p-4 sm:p-6 md:p-8">
+          {children}
+          <IdentitasFooter />
+        </main>
       </div>
     </div>
   );
