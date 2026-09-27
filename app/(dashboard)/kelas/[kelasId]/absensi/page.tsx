@@ -5,8 +5,15 @@ import { createClient } from "@/lib/supabase/server";
 import { KelasHeader } from "@/components/kelas-header";
 import { AbsensiGrid } from "./absensi-grid";
 import { RiwayatAbsensi, type HariAbsensi } from "./riwayat-absensi";
+import { JurnalForm } from "./jurnal-form";
 import { formatTanggalPanjang } from "@/lib/periode";
-import type { Absensi, KelasDetail, Siswa, StatusAbsensi } from "@/lib/types";
+import type {
+  Absensi,
+  Jurnal,
+  KelasDetail,
+  Siswa,
+  StatusAbsensi,
+} from "@/lib/types";
 import { ChevronLeft, ChevronRight, History } from "lucide-react";
 
 export default async function AbsensiPage({
@@ -37,25 +44,32 @@ export default async function AbsensiPage({
   const kelas = kelasData as unknown as KelasDetail;
   const aktif = kelas.tahun_pelajaran.status === "aktif";
 
-  const [{ data: siswaData }, { data: absensiData }, { data: riwayatData }] =
-    await Promise.all([
-      supabase
-        .from("siswa")
-        .select("*")
-        .eq("kelas_id", kelasId)
-        .order("urutan"),
-      supabase
-        .from("absensi")
-        .select("*")
-        .eq("kelas_id", kelasId)
-        .eq("tanggal", tanggal),
-      // Riwayat: semua absensi kelas ini (untuk daftar tanggal + rekap singkat).
-      supabase
-        .from("absensi")
-        .select("tanggal, status")
-        .eq("kelas_id", kelasId)
-        .order("tanggal", { ascending: false }),
-    ]);
+  const [
+    { data: siswaData },
+    { data: absensiData },
+    { data: riwayatData },
+    { data: jurnalData },
+  ] = await Promise.all([
+    supabase.from("siswa").select("*").eq("kelas_id", kelasId).order("urutan"),
+    supabase
+      .from("absensi")
+      .select("*")
+      .eq("kelas_id", kelasId)
+      .eq("tanggal", tanggal),
+    // Riwayat: semua absensi kelas ini (untuk daftar tanggal + rekap singkat).
+    supabase
+      .from("absensi")
+      .select("tanggal, status")
+      .eq("kelas_id", kelasId)
+      .order("tanggal", { ascending: false }),
+    // Jurnal mengajar untuk tanggal ini (opsional).
+    supabase
+      .from("jurnal")
+      .select("*")
+      .eq("kelas_id", kelasId)
+      .eq("tanggal", tanggal)
+      .maybeSingle(),
+  ]);
 
   const siswaList = (siswaData ?? []) as Siswa[];
   const absensiList = (absensiData ?? []) as Absensi[];
@@ -155,6 +169,13 @@ export default async function AbsensiPage({
           aktif={aktif}
         />
       )}
+
+      <JurnalForm
+        kelasId={kelasId}
+        tanggal={tanggal}
+        existing={(jurnalData as Jurnal | null) ?? null}
+        aktif={aktif}
+      />
 
       <RiwayatAbsensi
         kelasId={kelasId}

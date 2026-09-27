@@ -65,6 +65,20 @@ export interface Absensi {
   updated_at: string;
 }
 
+export interface Jurnal {
+  id: string;
+  kelas_id: string;
+  guru_id: string;
+  tanggal: string;
+  pertemuan: number | null;
+  materi: string | null;
+  tujuan: string | null;
+  kegiatan: string | null;
+  catatan: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Tugas {
   id: string;
   kelas_id: string;
