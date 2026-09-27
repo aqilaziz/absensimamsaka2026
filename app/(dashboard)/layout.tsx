@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { NavLink } from "@/components/nav-link";
 import { logout } from "./actions";
@@ -13,11 +14,10 @@ import {
   Users,
 } from "lucide-react";
 
-export default async function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+// Sidebar dimuat terpisah agar tidak memblokir render halaman.
+// Sebelumnya layout menunggu 4 query Supabase sebelum children bisa tampil,
+// sehingga setiap klik menu terasa menggantung.
+async function SidebarContent() {
   const supabase = await createClient();
 
   const [{ data: profile }, { data: tahunAktif }] = await Promise.all([
@@ -55,108 +55,134 @@ export default async function DashboardLayout({
     : null;
 
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar desktop */}
-      <aside className="hidden w-64 shrink-0 flex-col bg-emerald-950 md:flex">
-        <div className="px-5 py-5">
-          <p className="text-lg font-bold text-white">Absensi Santri</p>
-          <p className="text-xs text-emerald-200/70">
-            {profil?.nama ?? "Guru"}
-          </p>
-        </div>
+    <>
+      <div className="px-5 py-5">
+        <p className="text-lg font-bold text-white">Absensi Santri</p>
+        <p className="text-xs text-emerald-200/70">{profil?.nama ?? "Guru"}</p>
+      </div>
 
-        <div className="mx-4 rounded-lg bg-emerald-900/60 px-3 py-2">
-          <p className="text-[11px] uppercase tracking-wide text-emerald-300/70">
-            Tahun Pelajaran Aktif
+      <div className="mx-4 rounded-lg bg-emerald-900/60 px-3 py-2">
+        <p className="text-[11px] uppercase tracking-wide text-emerald-300/70">
+          Tahun Pelajaran Aktif
+        </p>
+        <p className="text-sm font-semibold text-emerald-50">
+          {tahun ? tahun.nama : "Belum ada"}
+        </p>
+        {semesterBerjalan && (
+          <p className="mt-0.5 text-[11px] font-medium text-emerald-200/80">
+            {labelSemester(semesterBerjalan.nama)}
           </p>
-          <p className="text-sm font-semibold text-emerald-50">
-            {tahun ? tahun.nama : "Belum ada"}
+        )}
+      </div>
+
+      <nav className="mt-4 space-y-1 px-3">
+        <NavLink href="/" exact>
+          <span className="flex items-center gap-2">
+            <LayoutDashboard size={16} /> Dashboard
+          </span>
+        </NavLink>
+        <NavLink href="/tahun-pelajaran">
+          <span className="flex items-center gap-2">
+            <CalendarRange size={16} /> Tahun Pelajaran
+          </span>
+        </NavLink>
+        <NavLink href="/kelas" exact>
+          <span className="flex items-center gap-2">
+            <Users size={16} /> Kelas
+          </span>
+        </NavLink>
+        <NavLink href="/cari-santri">
+          <span className="flex items-center gap-2">
+            <Search size={16} /> Cari Santri
+          </span>
+        </NavLink>
+        <NavLink href="/arsip">
+          <span className="flex items-center gap-2">
+            <Archive size={16} /> Arsip
+          </span>
+        </NavLink>
+      </nav>
+
+      {kelasList.length > 0 && (
+        <div className="mt-5 px-3">
+          <p className="mb-1 px-3 text-[11px] uppercase tracking-wide text-emerald-300/70">
+            Kelas Anda
           </p>
-          {semesterBerjalan && (
-            <p className="mt-0.5 text-[11px] font-medium text-emerald-200/80">
-              {labelSemester(semesterBerjalan.nama)}
-            </p>
+          {semesters.length > 0 ? (
+            semesters.map((s) => {
+              const items = kelasList.filter((k) => k.semester_id === s.id);
+              if (items.length === 0) return null;
+              return (
+                <div key={s.id} className="mb-2">
+                  <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-wide text-emerald-300/60">
+                    {labelSemester(s.nama)}
+                  </p>
+                  <div className="space-y-1">
+                    {items.map((k) => (
+                      <NavLink key={k.id} href={`/kelas/${k.id}`}>
+                        <span className="flex items-center gap-2">
+                          <ClipboardList size={14} /> {k.nama}
+                        </span>
+                      </NavLink>
+                    ))}
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="space-y-1">
+              {kelasList.map((k) => (
+                <NavLink key={k.id} href={`/kelas/${k.id}`}>
+                  <span className="flex items-center gap-2">
+                    <ClipboardList size={14} /> {k.nama}
+                  </span>
+                </NavLink>
+              ))}
+            </div>
           )}
         </div>
+      )}
 
-        <nav className="mt-4 space-y-1 px-3">
-          <NavLink href="/" exact>
-            <span className="flex items-center gap-2">
-              <LayoutDashboard size={16} /> Dashboard
-            </span>
-          </NavLink>
-          <NavLink href="/tahun-pelajaran">
-            <span className="flex items-center gap-2">
-              <CalendarRange size={16} /> Tahun Pelajaran
-            </span>
-          </NavLink>
-          <NavLink href="/kelas" exact>
-            <span className="flex items-center gap-2">
-              <Users size={16} /> Kelas
-            </span>
-          </NavLink>
-          <NavLink href="/cari-santri">
-            <span className="flex items-center gap-2">
-              <Search size={16} /> Cari Santri
-            </span>
-          </NavLink>
-          <NavLink href="/arsip">
-            <span className="flex items-center gap-2">
-              <Archive size={16} /> Arsip
-            </span>
-          </NavLink>
-        </nav>
+      <div className="mt-auto p-3">
+        <form action={logout}>
+          <button
+            type="submit"
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-emerald-100/80 transition hover:bg-emerald-800/60 hover:text-white"
+          >
+            <LogOut size={16} /> Keluar
+          </button>
+        </form>
+      </div>
+    </>
+  );
+}
 
-        {kelasList.length > 0 && (
-          <div className="mt-5 px-3">
-            <p className="mb-1 px-3 text-[11px] uppercase tracking-wide text-emerald-300/70">
-              Kelas Anda
-            </p>
-            {semesters.length > 0 ? (
-              semesters.map((s) => {
-                const items = kelasList.filter((k) => k.semester_id === s.id);
-                if (items.length === 0) return null;
-                return (
-                  <div key={s.id} className="mb-2">
-                    <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-wide text-emerald-300/60">
-                      {labelSemester(s.nama)}
-                    </p>
-                    <div className="space-y-1">
-                      {items.map((k) => (
-                        <NavLink key={k.id} href={`/kelas/${k.id}`}>
-                          <span className="flex items-center gap-2">
-                            <ClipboardList size={14} /> {k.nama}
-                          </span>
-                        </NavLink>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="space-y-1">
-                {kelasList.map((k) => (
-                  <NavLink key={k.id} href={`/kelas/${k.id}`}>
-                    <span className="flex items-center gap-2">
-                      <ClipboardList size={14} /> {k.nama}
-                    </span>
-                  </NavLink>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+function SidebarSkeleton() {
+  return (
+    <div className="animate-pulse space-y-4 p-4">
+      <div className="h-6 w-32 rounded bg-emerald-800/60" />
+      <div className="h-12 rounded-lg bg-emerald-800/40" />
+      <div className="space-y-2">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="h-8 rounded-lg bg-emerald-800/40" />
+        ))}
+      </div>
+    </div>
+  );
+}
 
-        <div className="mt-auto p-3">
-          <form action={logout}>
-            <button
-              type="submit"
-              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-emerald-100/80 transition hover:bg-emerald-800/60 hover:text-white"
-            >
-              <LogOut size={16} /> Keluar
-            </button>
-          </form>
-        </div>
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex min-h-screen">
+      {/* Sidebar desktop — dimuat terpisah agar children tidak menunggu. */}
+      <aside className="hidden w-64 shrink-0 flex-col overflow-y-auto bg-emerald-950 md:flex">
+        <Suspense fallback={<SidebarSkeleton />}>
+          <SidebarContent />
+        </Suspense>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">

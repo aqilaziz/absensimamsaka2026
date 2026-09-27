@@ -67,9 +67,17 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // OPTIMASI: getClaims() verifikasi JWT secara lokal tanpa round-trip
+  // jaringan ke Supabase Auth. Jauh lebih cepat dari getUser() yang
+  // dipanggil di setiap navigasi (klik menu/kelas/absensi).
+  // Hanya saat token expired (~1 jam) akan ada refresh via cookie.
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const claims = claimsData?.claims;
+  // Bentuk minimal user untuk pengecekan redirect; halaman tetap
+  // memvalidasi detail user via RLS / getUser() jika perlu.
+  const user = claims
+    ? ({ id: claims.sub } as unknown as { id: string })
+    : null;
 
   const { pathname } = request.nextUrl;
   const isLogin = pathname === "/login";
