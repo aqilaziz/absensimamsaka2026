@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { NavLink } from "@/components/nav-link";
-import { IdentitasFooter } from "@/components/identitas-footer";
 import { logout } from "./actions";
 import { labelSemester, semesterAktifHariIni } from "@/lib/periode";
 import type { Kelas, Profile, Semester, TahunPelajaran } from "@/lib/types";
@@ -57,9 +56,23 @@ async function SidebarContent() {
 
   return (
     <>
-      <div className="px-5 py-5">
-        <p className="text-lg font-bold text-white">Absensi Santri</p>
-        <p className="text-xs text-emerald-200/70">{profil?.nama ?? "Guru"}</p>
+      <div className="flex items-center gap-3 px-5 py-5">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logomam1.png"
+          alt="Logo MAM 1 Paciran"
+          width={44}
+          height={44}
+          className="h-11 w-11 shrink-0 rounded-full bg-white object-contain p-0.5"
+        />
+        <div className="min-w-0">
+          <p className="truncate text-sm font-bold leading-tight text-white">
+            MAM 1 Paciran
+          </p>
+          <p className="truncate text-xs text-emerald-200/70">
+            {profil?.nama ?? "Guru"}
+          </p>
+        </div>
       </div>
 
       <div className="mx-4 rounded-lg bg-emerald-900/60 px-3 py-2">
@@ -189,7 +202,19 @@ export default function DashboardLayout({
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Topbar mobile */}
         <header className="no-scrollbar sticky top-0 z-20 flex items-center gap-3 overflow-x-auto bg-emerald-950 px-4 py-3 md:hidden">
-          <span className="shrink-0 font-bold text-white">Absensi Santri</span>
+          <div className="flex shrink-0 items-center gap-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logomam1.png"
+              alt="Logo MAM 1 Paciran"
+              width={28}
+              height={28}
+              className="h-7 w-7 rounded-full bg-white object-contain p-0.5"
+            />
+            <span className="font-bold leading-tight text-white">
+              MAM 1 Paciran
+            </span>
+          </div>
           <nav className="flex shrink-0 items-center gap-1 text-sm">
             <NavLink href="/" exact>
               Dashboard
@@ -202,10 +227,7 @@ export default function DashboardLayout({
           </nav>
         </header>
 
-        <main className="min-w-0 flex-1 p-4 sm:p-6 md:p-8">
-          {children}
-          <IdentitasFooter />
-        </main>
+        <main className="min-w-0 flex-1 p-4 sm:p-6 md:p-8">{children}</main>
       </div>
     </div>
   );
