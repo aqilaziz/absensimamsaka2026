@@ -2,8 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { NamaSantriLink } from "@/components/nama-santri-link";
+import { MapelBadge } from "@/components/mapel-badge";
 import { formatTanggal } from "@/lib/periode";
-import type { Kelas, Siswa, TahunPelajaran } from "@/lib/types";
+import type { Kelas, Mapel, Siswa, TahunPelajaran } from "@/lib/types";
 import { Lock } from "lucide-react";
 
 export default async function ArsipDetailPage({
@@ -22,14 +23,16 @@ export default async function ArsipDetailPage({
       .maybeSingle(),
     supabase
       .from("kelas")
-      .select("*")
+      .select("*, mapel:mapel!kelas_mapel_id_fkey(nama, warna)")
       .eq("tahun_pelajaran_id", tahunId)
       .order("nama"),
   ]);
 
   if (!tahunData) notFound();
   const tahun = tahunData as TahunPelajaran;
-  const kelasList = (kelasData ?? []) as Kelas[];
+  const kelasList = (kelasData ?? []) as (Kelas & {
+    mapel?: Pick<Mapel, "nama" | "warna"> | null;
+  })[];
 
   const kelasIds = kelasList.map((k) => k.id);
   let siswaList: Siswa[] = [];
@@ -78,6 +81,7 @@ export default async function ArsipDetailPage({
                   <h2 className="break-words text-base font-semibold text-slate-900">
                     {k.nama}
                   </h2>
+                  <MapelBadge mapel={k.mapel} />
                   <div className="flex flex-wrap gap-2 text-xs">
                     <Link
                       href={`/kelas/${k.id}/absensi`}

@@ -18,13 +18,9 @@ export const simpanJurnalSchema = z
     kegiatan: z.string().trim().max(2000).optional(),
     catatan: z.string().trim().max(2000).optional(),
   })
-  .refine(
-    (d) =>
-      Boolean(
-        d.materi || d.tujuan || d.kegiatan || d.catatan,
-      ),
-    { message: "Isi minimal salah satu kolom jurnal" },
-  );
+  .refine((d) => Boolean(d.materi || d.tujuan || d.kegiatan || d.catatan), {
+    message: "Isi minimal salah satu kolom jurnal",
+  });
 
 export const hapusJurnalSchema = z.object({
   kelas_id: z.string().uuid(),

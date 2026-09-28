@@ -30,7 +30,7 @@ export default async function SantriDetailPage({
   const { data: siswaData } = await supabase
     .from("siswa")
     .select(
-      "*, kelas(*, tahun_pelajaran(*), semester:semester!kelas_semester_id_fkey(*))",
+      "*, kelas(*, tahun_pelajaran(*), mapel:mapel!kelas_mapel_id_fkey(*), semester:semester!kelas_semester_id_fkey(*))",
     )
     .eq("id", siswaId)
     .maybeSingle();

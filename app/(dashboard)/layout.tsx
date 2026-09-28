@@ -3,11 +3,17 @@ import { createClient } from "@/lib/supabase/server";
 import { NavLink } from "@/components/nav-link";
 import { logout } from "./actions";
 import { labelSemester, semesterAktifHariIni } from "@/lib/periode";
-import type { Kelas, Profile, Semester, TahunPelajaran } from "@/lib/types";
+import { temaMapel } from "@/lib/mapel";
+import type {
+  Kelas,
+  Mapel,
+  Profile,
+  Semester,
+  TahunPelajaran,
+} from "@/lib/types";
 import {
   Archive,
   CalendarRange,
-  ClipboardList,
   LayoutDashboard,
   LogOut,
   Search,
@@ -29,13 +35,14 @@ async function SidebarContent() {
       .maybeSingle(),
   ]);
 
-  let kelasList: Kelas[] = [];
+  let kelasList: (Kelas & { mapel?: Pick<Mapel, "nama" | "warna"> | null })[] =
+    [];
   let semesters: Semester[] = [];
   if (tahunAktif) {
     const [resKelas, resSemester] = await Promise.all([
       supabase
         .from("kelas")
-        .select("*")
+        .select("*, mapel:mapel!kelas_mapel_id_fkey(nama, warna)")
         .eq("tahun_pelajaran_id", (tahunAktif as TahunPelajaran).id)
         .order("nama"),
       supabase
@@ -44,7 +51,9 @@ async function SidebarContent() {
         .eq("tahun_pelajaran_id", (tahunAktif as TahunPelajaran).id)
         .order("urutan"),
     ]);
-    kelasList = (resKelas.data ?? []) as Kelas[];
+    kelasList = (resKelas.data ?? []) as (Kelas & {
+      mapel?: Pick<Mapel, "nama" | "warna"> | null;
+    })[];
     semesters = (resSemester.data ?? []) as Semester[];
   }
 
@@ -134,8 +143,11 @@ async function SidebarContent() {
                   <div className="space-y-1">
                     {items.map((k) => (
                       <NavLink key={k.id} href={`/kelas/${k.id}`}>
-                        <span className="flex items-center gap-2">
-                          <ClipboardList size={14} /> {k.nama}
+                        <span className="flex items-center gap-2 truncate">
+                          <span
+                            className={`h-2 w-2 shrink-0 rounded-full ${temaMapel(k.mapel?.warna).dot}`}
+                          />
+                          <span className="truncate">{k.nama}</span>
                         </span>
                       </NavLink>
                     ))}
@@ -147,8 +159,11 @@ async function SidebarContent() {
             <div className="space-y-1">
               {kelasList.map((k) => (
                 <NavLink key={k.id} href={`/kelas/${k.id}`}>
-                  <span className="flex items-center gap-2">
-                    <ClipboardList size={14} /> {k.nama}
+                  <span className="flex items-center gap-2 truncate">
+                    <span
+                      className={`h-2 w-2 shrink-0 rounded-full ${temaMapel(k.mapel?.warna).dot}`}
+                    />
+                    <span className="truncate">{k.nama}</span>
                   </span>
                 </NavLink>
               ))}

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { labelSemester } from "@/lib/periode";
+import { MapelBadge } from "@/components/mapel-badge";
 import type { KelasDetail } from "@/lib/types";
 
 type TabKey = "santri" | "absensi" | "tugas" | "rekap";
@@ -30,6 +31,7 @@ export function KelasHeader({
         <h1 className="w-full text-xl font-bold text-slate-900 sm:w-auto sm:text-2xl">
           {kelas.nama}
         </h1>
+        {kelas.mapel && <MapelBadge mapel={kelas.mapel} />}
         <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
           {kelas.tahun_pelajaran.nama}
           {kelas.tahun_pelajaran.status === "arsip" && " · Arsip"}

@@ -20,7 +20,7 @@ export default async function TugasDetailPage({
     supabase
       .from("kelas")
       .select(
-        "*, tahun_pelajaran(*), semester:semester!kelas_semester_id_fkey(*)",
+        "*, tahun_pelajaran(*), mapel:mapel!kelas_mapel_id_fkey(*), semester:semester!kelas_semester_id_fkey(*)",
       )
       .eq("id", kelasId)
       .maybeSingle(),

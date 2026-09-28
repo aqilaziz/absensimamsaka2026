@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { NamaSantriLink } from "@/components/nama-santri-link";
+import { MapelBadge } from "@/components/mapel-badge";
 import type { HasilCariSantri } from "@/lib/types";
 import { Loader2, Search } from "lucide-react";
 
@@ -146,6 +147,7 @@ export function SearchSantri({ qAwal = "" }: { qAwal?: string }) {
                     )}
                   </div>
                   <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                    {s.kelas.mapel && <MapelBadge mapel={s.kelas.mapel} />}
                     <span>
                       {s.kelas.nama} · {s.kelas.tahun_pelajaran.nama}
                     </span>

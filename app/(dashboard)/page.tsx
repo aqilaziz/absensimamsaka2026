@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { format } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
+import { MapelBadge } from "@/components/mapel-badge";
+import { temaMapel } from "@/lib/mapel";
 import { labelSemester, semesterAktifHariIni } from "@/lib/periode";
 import type {
   Kelas,
+  Mapel,
   NamaSemester,
   Profile,
   Semester,
@@ -31,7 +34,8 @@ export default async function DashboardPage() {
   const profil = profile as Profile | null;
   const tahun = tahunAktif as TahunPelajaran | null;
 
-  let kelasList: Kelas[] = [];
+  let kelasList: (Kelas & { mapel?: Pick<Mapel, "nama" | "warna"> | null })[] =
+    [];
   let jumlahSantri = 0;
   let absensiHariIni = 0;
   let jumlahTugas = 0;
@@ -42,7 +46,7 @@ export default async function DashboardPage() {
     const [resKelas, resSemester] = await Promise.all([
       supabase
         .from("kelas")
-        .select("*")
+        .select("*, mapel:mapel!kelas_mapel_id_fkey(nama, warna)")
         .eq("tahun_pelajaran_id", tahun.id)
         .order("nama"),
       supabase
@@ -51,7 +55,9 @@ export default async function DashboardPage() {
         .eq("tahun_pelajaran_id", tahun.id)
         .order("urutan"),
     ]);
-    kelasList = (resKelas.data ?? []) as Kelas[];
+    kelasList = (resKelas.data ?? []) as (Kelas & {
+      mapel?: Pick<Mapel, "nama" | "warna"> | null;
+    })[];
     const semesters = (resSemester.data ?? []) as Semester[];
     semesters.forEach((s) => semesterOf.set(s.id, s.nama));
     semesterBerjalan =
@@ -155,46 +161,52 @@ export default async function DashboardPage() {
           </p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {kelasList.map((k) => (
-              <div
-                key={k.id}
-                className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
-              >
-                <Link
-                  href={`/kelas/${k.id}`}
-                  className="text-base font-semibold text-slate-900 hover:text-emerald-700"
+            {kelasList.map((k) => {
+              const t = temaMapel(k.mapel?.warna);
+              return (
+                <div
+                  key={k.id}
+                  className={`rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200 border-t-4 ${t.batang}`}
                 >
-                  {k.nama}
-                </Link>
-                {semesterOf.get(k.semester_id) && (
-                  <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
-                    {semesterOf.get(k.semester_id) === "genap"
-                      ? "Genap"
-                      : "Ganjil"}
-                  </span>
-                )}
-                <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                  <Link
-                    href={`/kelas/${k.id}/absensi`}
-                    className="rounded-full bg-emerald-50 px-3 py-1 font-medium text-emerald-700 hover:bg-emerald-100"
-                  >
-                    Absensi
-                  </Link>
-                  <Link
-                    href={`/kelas/${k.id}/tugas`}
-                    className="rounded-full bg-sky-50 px-3 py-1 font-medium text-sky-700 hover:bg-sky-100"
-                  >
-                    Tugas
-                  </Link>
-                  <Link
-                    href={`/kelas/${k.id}/rekap`}
-                    className="rounded-full bg-violet-50 px-3 py-1 font-medium text-violet-700 hover:bg-violet-100"
-                  >
-                    Rekap
-                  </Link>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Link
+                      href={`/kelas/${k.id}`}
+                      className="text-base font-semibold text-slate-900 hover:text-emerald-700"
+                    >
+                      {k.nama}
+                    </Link>
+                    <MapelBadge mapel={k.mapel} />
+                  </div>
+                  {semesterOf.get(k.semester_id) && (
+                    <span className="mt-1 inline-block rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                      {semesterOf.get(k.semester_id) === "genap"
+                        ? "Genap"
+                        : "Ganjil"}
+                    </span>
+                  )}
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                    <Link
+                      href={`/kelas/${k.id}/absensi`}
+                      className="rounded-full bg-emerald-50 px-3 py-1 font-medium text-emerald-700 hover:bg-emerald-100"
+                    >
+                      Absensi
+                    </Link>
+                    <Link
+                      href={`/kelas/${k.id}/tugas`}
+                      className="rounded-full bg-sky-50 px-3 py-1 font-medium text-sky-700 hover:bg-sky-100"
+                    >
+                      Tugas
+                    </Link>
+                    <Link
+                      href={`/kelas/${k.id}/rekap`}
+                      className="rounded-full bg-violet-50 px-3 py-1 font-medium text-violet-700 hover:bg-violet-100"
+                    >
+                      Rekap
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

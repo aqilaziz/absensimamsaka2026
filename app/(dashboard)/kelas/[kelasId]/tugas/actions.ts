@@ -117,7 +117,7 @@ export async function simpanPengumpulan(input: unknown): Promise<ActionResult> {
   const { data: tugasData } = await supabase
     .from("tugas")
     .select(
-      "*, kelas(*, tahun_pelajaran(*), semester:semester!kelas_semester_id_fkey(*))",
+      "*, kelas(*, tahun_pelajaran(*), mapel:mapel!kelas_mapel_id_fkey(*), semester:semester!kelas_semester_id_fkey(*))",
     )
     .eq("id", tugas_id)
     .maybeSingle();

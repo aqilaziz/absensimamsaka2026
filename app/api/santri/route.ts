@@ -35,7 +35,9 @@ export async function GET(request: NextRequest) {
   const pola = `%${q.replace(/[%_,()]/g, "")}%`;
   let req = supabase
     .from("siswa")
-    .select("*, kelas!inner(*, tahun_pelajaran!inner(*))")
+    .select(
+      "*, kelas!inner(*, tahun_pelajaran!inner(*), mapel:mapel!kelas_mapel_id_fkey(nama, warna))",
+    )
     .or(`nama.ilike.${pola},nis.ilike.${pola}`)
     .order("nama")
     .limit(20);

@@ -2,6 +2,9 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { KelasForm } from "./kelas-form";
 import { KelasDeleteButton } from "./kelas-delete-button";
+import { MapelKelola } from "./mapel-kelola";
+import { MapelBadge } from "@/components/mapel-badge";
+import { temaMapel } from "@/lib/mapel";
 import {
   formatTanggal,
   labelSemester,
@@ -9,6 +12,7 @@ import {
 } from "@/lib/periode";
 import type {
   Kelas,
+  Mapel,
   NamaSemester,
   Semester,
   TahunPelajaran,
@@ -16,6 +20,7 @@ import type {
 
 interface KelasDenganSiswa extends Kelas {
   siswa: { count: number }[];
+  mapel?: Pick<Mapel, "nama" | "warna"> | null;
 }
 
 export default async function KelasPage({
@@ -49,20 +54,25 @@ export default async function KelasPage({
     );
   }
 
-  const [{ data: semData }, { data: data }] = await Promise.all([
-    supabase
-      .from("semester")
-      .select("*")
-      .eq("tahun_pelajaran_id", tahun.id)
-      .order("urutan"),
-    supabase
-      .from("kelas")
-      .select("*, siswa(count), semester:semester!kelas_semester_id_fkey(nama)")
-      .eq("tahun_pelajaran_id", tahun.id)
-      .order("nama"),
-  ]);
+  const [{ data: semData }, { data: data }, { data: mapelData }] =
+    await Promise.all([
+      supabase
+        .from("semester")
+        .select("*")
+        .eq("tahun_pelajaran_id", tahun.id)
+        .order("urutan"),
+      supabase
+        .from("kelas")
+        .select(
+          "*, siswa(count), mapel:mapel!kelas_mapel_id_fkey(nama, warna), semester:semester!kelas_semester_id_fkey(nama)",
+        )
+        .eq("tahun_pelajaran_id", tahun.id)
+        .order("nama"),
+      supabase.from("mapel").select("*").order("nama"),
+    ]);
 
   const semesters = (semData ?? []) as Semester[];
+  const mapels = (mapelData ?? []) as Mapel[];
 
   const pilihan: NamaSemester =
     sp.semester === "genap" || sp.semester === "ganjil"
@@ -108,7 +118,11 @@ export default async function KelasPage({
             {formatTanggal(semester.tgl_selesai)})
           </p>
         </div>
-        <KelasForm semesters={semesters} semesterAwal={semester.id} />
+        <KelasForm
+          semesters={semesters}
+          mapels={mapels}
+          semesterAwal={semester.id}
+        />
       </div>
 
       {/* Pilih semester: Ganjil / Genap */}
@@ -128,6 +142,8 @@ export default async function KelasPage({
         ))}
       </div>
 
+      <MapelKelola mapels={mapels} />
+
       {kelasList.length === 0 ? (
         <p className="card text-sm text-slate-500">
           Belum ada kelas di {labelSemester(semester.nama)}. Klik{" "}
@@ -135,32 +151,39 @@ export default async function KelasPage({
         </p>
       ) : (
         <div className="space-y-3">
-          {kelasList.map((k) => (
-            <div
-              key={k.id}
-              className="card flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
-            >
-              <div className="min-w-0">
-                <Link
-                  href={`/kelas/${k.id}`}
-                  className="break-words text-base font-semibold text-slate-900 hover:text-emerald-700"
-                >
-                  {k.nama}
-                </Link>
-                <p className="text-xs text-slate-400">
-                  {k.siswa[0]?.count ?? 0} santri
-                </p>
+          {kelasList.map((k) => {
+            const t = temaMapel(k.mapel?.warna);
+            return (
+              <div
+                key={k.id}
+                className={`card flex flex-col gap-3 border-l-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between ${t.batang}`}
+              >
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Link
+                      href={`/kelas/${k.id}`}
+                      className="break-words text-base font-semibold text-slate-900 hover:text-emerald-700"
+                    >
+                      {k.nama}
+                    </Link>
+                    <MapelBadge mapel={k.mapel} />
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    {k.siswa[0]?.count ?? 0} santri
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <KelasForm
+                    kelas={k}
+                    semesters={semesters}
+                    mapels={mapels}
+                    semesterAwal={semester.id}
+                  />
+                  <KelasDeleteButton kelasId={k.id} nama={k.nama} />
+                </div>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <KelasForm
-                  kelas={k}
-                  semesters={semesters}
-                  semesterAwal={semester.id}
-                />
-                <KelasDeleteButton kelasId={k.id} nama={k.nama} />
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

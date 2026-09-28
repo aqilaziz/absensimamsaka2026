@@ -4,6 +4,19 @@ export type TipePenilaian = "ceklis" | "nilai";
 export type StatusKumpul = "belum" | "sudah" | "terlambat";
 export type NamaSemester = "ganjil" | "genap";
 
+/** Kunci palet warna tema mata pelajaran (lihat lib/mapel.ts). */
+export type WarnaMapel =
+  | "emerald"
+  | "sky"
+  | "violet"
+  | "amber"
+  | "rose"
+  | "teal"
+  | "indigo"
+  | "orange"
+  | "cyan"
+  | "fuchsia";
+
 export interface Profile {
   id: string;
   nama: string;
@@ -34,10 +47,19 @@ export interface TahunPelajaran {
   created_at: string;
 }
 
+export interface Mapel {
+  id: string;
+  guru_id: string;
+  nama: string;
+  warna: WarnaMapel;
+  created_at: string;
+}
+
 export interface Kelas {
   id: string;
   tahun_pelajaran_id: string;
   semester_id: string;
+  mapel_id: string | null;
   guru_id: string;
   nama: string;
   created_at: string;
@@ -181,6 +203,7 @@ export interface RiwayatTahunRow {
 export interface KelasDetail extends Kelas {
   tahun_pelajaran: TahunPelajaran;
   semester?: Semester;
+  mapel?: Mapel | null;
 }
 
 /** Hasil pencarian santri: data santri + kelas induknya (beserta tahun). */

@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { hapusJurnalSchema, simpanJurnalSchema } from "@/lib/validations/jurnal";
+import {
+  hapusJurnalSchema,
+  simpanJurnalSchema,
+} from "@/lib/validations/jurnal";
 import type { ActionResult, KelasDetail } from "@/lib/types";
 
 export async function simpanJurnal(input: unknown): Promise<ActionResult> {
@@ -23,7 +26,7 @@ export async function simpanJurnal(input: unknown): Promise<ActionResult> {
   const { data: kelasData } = await supabase
     .from("kelas")
     .select(
-      "*, tahun_pelajaran(*), semester:semester!kelas_semester_id_fkey(*)",
+      "*, tahun_pelajaran(*), mapel:mapel!kelas_mapel_id_fkey(*), semester:semester!kelas_semester_id_fkey(*)",
     )
     .eq("id", kelas_id)
     .maybeSingle();
