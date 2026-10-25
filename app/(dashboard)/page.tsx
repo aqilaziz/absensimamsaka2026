@@ -166,12 +166,15 @@ export default async function DashboardPage() {
               return (
                 <div
                   key={k.id}
-                  className={`rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200 border-t-4 ${t.batang}`}
+                  className={`relative rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200 border-t-4 transition hover:ring-emerald-300 hover:shadow-md ${t.batang}`}
                 >
                   <div className="flex flex-wrap items-center gap-2">
+                    {/* Stretched link: ::after menutupi seluruh kartu sehingga
+                        klik di mana pun membuka detail kelas. Elemen interaktif
+                        lain di dalam kartu perlu `relative z-10`. */}
                     <Link
                       href={`/kelas/${k.id}`}
-                      className="text-base font-semibold text-slate-900 hover:text-emerald-700"
+                      className="text-base font-semibold text-slate-900 after:absolute after:inset-0 after:rounded-xl hover:text-emerald-700"
                     >
                       {k.nama}
                     </Link>
@@ -184,7 +187,7 @@ export default async function DashboardPage() {
                         : "Ganjil"}
                     </span>
                   )}
-                  <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                  <div className="relative z-10 mt-3 flex flex-wrap gap-2 text-xs">
                     <Link
                       href={`/kelas/${k.id}/absensi`}
                       className="rounded-full bg-emerald-50 px-3 py-1 font-medium text-emerald-700 hover:bg-emerald-100"

@@ -156,13 +156,16 @@ export default async function KelasPage({
             return (
               <div
                 key={k.id}
-                className={`card flex flex-col gap-3 border-l-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between ${t.batang}`}
+                className={`card relative flex flex-col gap-3 border-l-4 transition hover:ring-emerald-300 hover:shadow-md sm:flex-row sm:flex-wrap sm:items-center sm:justify-between ${t.batang}`}
               >
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
+                    {/* Stretched link: ::after menutupi seluruh kartu sehingga
+                        klik di mana pun membuka detail kelas. Tombol Edit/Hapus
+                        di bawahnya diberi `relative z-10`. */}
                     <Link
                       href={`/kelas/${k.id}`}
-                      className="break-words text-base font-semibold text-slate-900 hover:text-emerald-700"
+                      className="break-words text-base font-semibold text-slate-900 after:absolute after:inset-0 after:rounded-xl hover:text-emerald-700"
                     >
                       {k.nama}
                     </Link>
@@ -172,7 +175,7 @@ export default async function KelasPage({
                     {k.siswa[0]?.count ?? 0} santri
                   </p>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="relative z-10 flex flex-wrap items-center gap-2">
                   <KelasForm
                     kelas={k}
                     semesters={semesters}
