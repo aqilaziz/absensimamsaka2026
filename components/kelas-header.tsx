@@ -47,6 +47,7 @@ export function KelasHeader({
           <Link
             key={t.key}
             href={t.href}
+            prefetch={false}
             className={
               active === t.key
                 ? "shrink-0 whitespace-nowrap rounded-lg bg-emerald-600 px-4 py-1.5 text-sm font-semibold text-white"

@@ -30,26 +30,24 @@ export default async function AbsensiPage({
       ? tanggalParam
       : format(new Date(), "yyyy-MM-dd");
 
+  const t0 = Date.now(); // TEMP timing: hapus setelah diagnosis
   const supabase = await createClient();
 
-  const { data: kelasData } = await supabase
-    .from("kelas")
-    .select(
-      "*, tahun_pelajaran(*), mapel:mapel!kelas_mapel_id_fkey(*), semester:semester!kelas_semester_id_fkey(*)",
-    )
-    .eq("id", kelasId)
-    .maybeSingle();
-
-  if (!kelasData) notFound();
-  const kelas = kelasData as unknown as KelasDetail;
-  const aktif = kelas.tahun_pelajaran.status === "aktif";
-
+  // Semua query dijalankan bersamaan (kelas ikut Promise.all) agar satu round-trip saja.
   const [
+    { data: kelasData },
     { data: siswaData },
     { data: absensiData },
     { data: riwayatData },
     { data: jurnalData },
   ] = await Promise.all([
+    supabase
+      .from("kelas")
+      .select(
+        "*, tahun_pelajaran(*), mapel:mapel!kelas_mapel_id_fkey(*), semester:semester!kelas_semester_id_fkey(*)",
+      )
+      .eq("id", kelasId)
+      .maybeSingle(),
     supabase.from("siswa").select("*").eq("kelas_id", kelasId).order("urutan"),
     supabase
       .from("absensi")
@@ -70,6 +68,11 @@ export default async function AbsensiPage({
       .eq("tanggal", tanggal)
       .maybeSingle(),
   ]);
+  const tQuery = Date.now() - t0; // TEMP timing
+
+  if (!kelasData) notFound();
+  const kelas = kelasData as unknown as KelasDetail;
+  const aktif = kelas.tahun_pelajaran.status === "aktif";
 
   const siswaList = (siswaData ?? []) as Siswa[];
   const absensiList = (absensiData ?? []) as Absensi[];
@@ -95,6 +98,8 @@ export default async function AbsensiPage({
   const hariList = [...petaHari.values()].sort((a, b) =>
     a.tanggal < b.tanggal ? 1 : -1,
   );
+
+  console.log(`[timing] absensi kelas=${kelasId} tanggal=${tanggal} query=${tQuery}ms total=${Date.now() - t0}ms riwayat=${riwayatData?.length ?? 0}`); // TEMP timing
 
   const kemarin = format(addDays(new Date(tanggal), -1), "yyyy-MM-dd");
   const besok = format(addDays(new Date(tanggal), 1), "yyyy-MM-dd");
