@@ -13,7 +13,9 @@ async function getUserId() {
   return { supabase, userId: user?.id ?? null };
 }
 
-export async function createTahun(input: unknown): Promise<ActionResult> {
+export async function createTahun(
+  input: unknown & { bersama?: boolean },
+): Promise<ActionResult> {
   const parsed = tahunSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0].message };
@@ -22,12 +24,22 @@ export async function createTahun(input: unknown): Promise<ActionResult> {
   if (!userId)
     return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
 
+  // Admin boleh membuat tahun BERSAMA (guru_id null) yang dipakai semua guru.
+  let bersama = false;
+  if (input.bersama) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .single();
+    bersama = (profile as { role?: string } | null)?.role === "admin";
+  }
+
   // Tanggal semester otomatis dari nama tahun:
   // Ganjil 1 Juli–31 Des (tahun pertama), Genap 1 Jan–30 Jun (tahun kedua).
   const [awal, akhir] = parsed.data.nama.split("/").map(Number);
   const row = {
     nama: parsed.data.nama,
-    guru_id: userId,
+    guru_id: bersama ? null : userId,
     tgl_mulai: `${awal}-07-01`,
     batas_semester: `${awal}-12-31`,
     tgl_selesai: `${akhir}-06-30`,
@@ -40,8 +52,17 @@ export async function createTahun(input: unknown): Promise<ActionResult> {
       return {
         ok: false,
         error:
-          "Masih ada tahun pelajaran aktif. Arsipkan dulu sebelum membuat baru.",
+          "Masih ada tahun pelajaran aktif milik Anda. Arsipkan dulu sebelum membuat baru.",
       };
+    }
+    if (error.message.includes("satu_tahun_aktif_bersama")) {
+      return {
+        ok: false,
+        error: "Sudah ada tahun BERSAMA yang aktif. Arsipkan dulu di menu Tahun Pelajaran.",
+      };
+    }
+    if (error.message.includes("tahun_bersama_nama_unik")) {
+      return { ok: false, error: "Tahun BERSAMA dengan nama ini sudah ada." };
     }
     if (error.code === "23505") {
       return { ok: false, error: "Nama tahun pelajaran sudah dipakai" };

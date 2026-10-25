@@ -47,7 +47,7 @@ Rancangan arsitektur: `../arsitektur-absensi-nextjs-supabase.md`
    `0009_admin_kelola_kelas.sql` dapat **membuat kelas + daftar santri atas nama
    seorang guru** lewat `/admin/kelas-baru`.
 
-5. **(Model bersama, migrasi `0010_model_bersama.sql`)** — admin dapat membuat **data
+6. **(Model bersama, migrasi `0010_model_bersama.sql`)** — admin dapat membuat **data
    bersama/bacaa**: tahun pelajaran, semester, mapel, kelas, dan santri dengan
    `guru_id = NULL` lewat `/admin/kelas-baru`. Semua guru dapat **membaca** data
    bersama ini (muncul di `/kelas`, `/tahun-pelajaran`, dst) dan **memakai**-nya
@@ -55,9 +55,16 @@ Rancangan arsitektur: `../arsitektur-absensi-nextjs-supabase.md`
    mengubah/menghapusnya — hanya admin. Guru tetap bisa membuat data miliknya sendiri.
    Absensi & tugas tetap bisa diisi pada kelas bersama oleh guru mana pun.
 
-6. **(Opsional) seed data contoh** — ubah email di `supabase/seed.sql` sesuai akun guru, jalankan di SQL Editor.
+   **Admin membuat tahun bersama** dari `/tahun-pelajaran`: di form "Buat Tahun
+   Pelajaran" ada centang *"Buat sebagai tahun BERSAMA"* (default aktif khusus
+   admin) sehingga tahun + kedua semesternya dibuat dengan `guru_id = NULL` dan
+   langsung terlihat oleh semua guru. Dashboard & sidebar kini menangani banyak
+   tahun aktif (bila admin juga punya/melihat tahun milik guru): prioritas tahun
+   milik sendiri → tahun bersama → tahun pertama.
 
-7. **Jalankan aplikasi**:
+7. **(Opsional) seed data contoh** — ubah email di `supabase/seed.sql` sesuai akun guru, jalankan di SQL Editor.
+
+8. **Jalankan aplikasi**:
 
    ```bash
    npm install

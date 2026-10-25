@@ -27,29 +27,36 @@ import {
 async function SidebarContent() {
   const supabase = await createClient();
 
-  const [{ data: profile }, { data: tahunAktif }] = await Promise.all([
+  const [{ data: profile }, { data: aktifList }] = await Promise.all([
     supabase.from("profiles").select("*").single(),
-    supabase
-      .from("tahun_pelajaran")
-      .select("*")
-      .eq("status", "aktif")
-      .maybeSingle(),
+    supabase.from("tahun_pelajaran").select("*").eq("status", "aktif"),
   ]);
+
+  const profil = profile as Profile | null;
+  // Admin dapat melihat beberapa tahun aktif sekaligus (milik tiap guru + tahun bersama).
+  // Prioritas: milik sendiri → tahun bersama (guru_id null) → baris pertama.
+  const aktif = (aktifList ?? []) as TahunPelajaran[];
+  const uid = profil?.id ?? "";
+  const tahun =
+    aktif.find((t) => (t as { guru_id?: string | null }).guru_id === uid) ??
+    aktif.find((t) => (t as { guru_id?: string | null }).guru_id === null) ??
+    aktif[0] ??
+    null;
 
   let kelasList: (Kelas & { mapel?: Pick<Mapel, "nama" | "warna"> | null })[] =
     [];
   let semesters: Semester[] = [];
-  if (tahunAktif) {
+  if (tahun) {
     const [resKelas, resSemester] = await Promise.all([
       supabase
         .from("kelas")
         .select("*, mapel:mapel!kelas_mapel_id_fkey(nama, warna)")
-        .eq("tahun_pelajaran_id", (tahunAktif as TahunPelajaran).id)
+        .eq("tahun_pelajaran_id", tahun.id)
         .order("nama"),
       supabase
         .from("semester")
         .select("*")
-        .eq("tahun_pelajaran_id", (tahunAktif as TahunPelajaran).id)
+        .eq("tahun_pelajaran_id", tahun.id)
         .order("urutan"),
     ]);
     kelasList = (resKelas.data ?? []) as (Kelas & {
@@ -58,8 +65,6 @@ async function SidebarContent() {
     semesters = (resSemester.data ?? []) as Semester[];
   }
 
-  const profil = profile as Profile | null;
-  const tahun = tahunAktif as TahunPelajaran | null;
   const semesterBerjalan = tahun
     ? (semesters.find((s) => s.nama === semesterAktifHariIni(tahun)) ?? null)
     : null;

@@ -22,17 +22,22 @@ import {
 export default async function DashboardPage() {
   const supabase = await createClient();
 
-  const [{ data: profile }, { data: tahunAktif }] = await Promise.all([
+  const [{ data: profile }, { data: aktifList }] = await Promise.all([
     supabase.from("profiles").select("*").single(),
-    supabase
-      .from("tahun_pelajaran")
-      .select("*")
-      .eq("status", "aktif")
-      .maybeSingle(),
+    supabase.from("tahun_pelajaran").select("*").eq("status", "aktif"),
   ]);
 
   const profil = profile as Profile | null;
-  const tahun = tahunAktif as TahunPelajaran | null;
+  // Admin dapat melihat beberapa tahun aktif sekaligus (milik tiap guru + tahun bersama).
+  // Prioritas: milik sendiri → tahun bersama (guru_id null) → baris pertama.
+  const aktif = (aktifList ?? []) as TahunPelajaran[];
+  const tahun =
+    aktif.find(
+      (t) => (t as { guru_id?: string | null }).guru_id === profil?.id,
+    ) ??
+    aktif.find((t) => (t as { guru_id?: string | null }).guru_id === null) ??
+    aktif[0] ??
+    null;
 
   let kelasList: (Kelas & { mapel?: Pick<Mapel, "nama" | "warna"> | null })[] =
     [];
