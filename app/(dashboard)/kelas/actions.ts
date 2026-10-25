@@ -30,7 +30,10 @@ async function siapkanMapel(
       .select("id, guru_id")
       .eq("id", data.mapel_id)
       .maybeSingle();
-    if (!mapel || (mapel as { guru_id: string }).guru_id !== userId) {
+    if (!mapel) return { error: "Mata pelajaran tidak ditemukan" };
+    const guruId = (mapel as { guru_id: string | null }).guru_id;
+    // Guru boleh memakai mapel miliknya sendiri ATAU mapel bersama (admin).
+    if (guruId !== userId && guruId !== null) {
       return { error: "Mata pelajaran tidak ditemukan" };
     }
     return { mapelId: (mapel as { id: string }).id };

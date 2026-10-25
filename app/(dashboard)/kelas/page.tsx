@@ -31,13 +31,23 @@ export default async function KelasPage({
   const sp = await searchParams;
   const supabase = await createClient();
 
-  const { data: tahunAktif } = await supabase
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const uid = user?.id ?? null;
+
+  // Pilih tahun aktif: utamakan milik guru sendiri, lalu tahun bersama (dibuat
+  // admin, guru_id NULL), terakhir sembarang tahun aktif.
+  const { data: tahunAktifArr } = await supabase
     .from("tahun_pelajaran")
     .select("*")
-    .eq("status", "aktif")
-    .maybeSingle();
-
-  const tahun = tahunAktif as TahunPelajaran | null;
+    .eq("status", "aktif");
+  const aktifList = (tahunAktifArr ?? []) as TahunPelajaran[];
+  const tahun =
+    aktifList.find((t) => t.guru_id === uid) ??
+    aktifList.find((t) => t.guru_id !== uid) ??
+    aktifList[0] ??
+    null;
 
   if (!tahun) {
     return (
@@ -73,6 +83,12 @@ export default async function KelasPage({
 
   const semesters = (semData ?? []) as Semester[];
   const mapels = (mapelData ?? []) as Mapel[];
+
+  // Hanya mapel milik sendiri yang bisa dikelola guru; mapel bersama (guru_id
+  // NULL) bersifat hanya-baca untuk guru.
+  const mapelSendiri = mapels.filter(
+    (m) => (m as { guru_id?: string | null }).guru_id != null,
+  );
 
   const pilihan: NamaSemester =
     sp.semester === "genap" || sp.semester === "ganjil"
@@ -142,7 +158,7 @@ export default async function KelasPage({
         ))}
       </div>
 
-      <MapelKelola mapels={mapels} />
+      <MapelKelola mapels={mapelSendiri} />
 
       {kelasList.length === 0 ? (
         <p className="card text-sm text-slate-500">
@@ -153,6 +169,7 @@ export default async function KelasPage({
         <div className="space-y-3">
           {kelasList.map((k) => {
             const t = temaMapel(k.mapel?.warna);
+            const sendiri = (k as { guru_id?: string | null }).guru_id != null;
             return (
               <div
                 key={k.id}
@@ -170,19 +187,28 @@ export default async function KelasPage({
                       {k.nama}
                     </Link>
                     <MapelBadge mapel={k.mapel} />
+                    {!sendiri && (
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+                        dari Admin
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-slate-400">
                     {k.siswa[0]?.count ?? 0} santri
                   </p>
                 </div>
                 <div className="relative z-10 flex flex-wrap items-center gap-2">
-                  <KelasForm
-                    kelas={k}
-                    semesters={semesters}
-                    mapels={mapels}
-                    semesterAwal={semester.id}
-                  />
-                  <KelasDeleteButton kelasId={k.id} nama={k.nama} />
+                  {sendiri && (
+                    <>
+                      <KelasForm
+                        kelas={k}
+                        semesters={semesters}
+                        mapels={mapels}
+                        semesterAwal={semester.id}
+                      />
+                      <KelasDeleteButton kelasId={k.id} nama={k.nama} />
+                    </>
+                  )}
                 </div>
               </div>
             );

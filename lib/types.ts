@@ -3,6 +3,7 @@ export type StatusAbsensi = "hadir" | "sakit" | "izin" | "alpha";
 export type TipePenilaian = "ceklis" | "nilai";
 export type StatusKumpul = "belum" | "sudah" | "terlambat";
 export type NamaSemester = "ganjil" | "genap";
+export type Role = "guru" | "admin";
 
 /** Kunci palet warna tema mata pelajaran (lihat lib/mapel.ts). */
 export type WarnaMapel =
@@ -20,7 +21,27 @@ export type WarnaMapel =
 export interface Profile {
   id: string;
   nama: string;
+  role: Role;
   created_at: string;
+}
+
+/** Baris rekap per kelas untuk Dashboard Admin (view v_admin_rekap_kelas). */
+export interface AdminKelasRow {
+  kelas_id: string;
+  guru_id: string;
+  guru: string;
+  kelas: string;
+  tahun: string;
+  semester: NamaSemester;
+  mapel: string | null;
+  mapel_warna: WarnaMapel | null;
+  jumlah_santri: number;
+  total_hari: number;
+  hadir: number;
+  sakit: number;
+  izin: number;
+  alpha: number;
+  persen_hadir: number | null;
 }
 
 /** Semester anak dari tahun pelajaran; tanggalnya diturunkan dari

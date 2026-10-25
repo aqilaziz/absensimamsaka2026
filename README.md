@@ -16,6 +16,11 @@ Rancangan arsitektur: `../arsitektur-absensi-nextjs-supabase.md`
    - `supabase/migrations/0003_triggers.sql`
    - `supabase/migrations/0004_views_rpc.sql`
    - `supabase/migrations/0005_semester.sql`
+   - `supabase/migrations/0006_jurnal.sql`
+   - `supabase/migrations/0007_mapel.sql`
+   - `supabase/migrations/0008_role_admin.sql`
+   - `supabase/migrations/0009_admin_kelola_kelas.sql`
+   - `supabase/migrations/0010_model_bersama.sql`
 
    Atau via CLI: `supabase link --project-ref <ref>` lalu `supabase db push`.
 
@@ -29,11 +34,30 @@ Rancangan arsitektur: `../arsitektur-absensi-nextjs-supabase.md`
    ```
 
 4. **Buat akun guru** — Authentication → Users → Add user (email + password).
-   Profil dibuat otomatis oleh trigger `handle_new_user`.
+   Profil dibuat otomatis oleh trigger `handle_new_user`. Setiap profil default ber-role `guru`.
 
-5. **(Opsional) seed data contoh** — ubah email di `supabase/seed.sql` sesuai akun guru, jalankan di SQL Editor.
+5. **Jadikan seorang admin** — setelah migrasi `0008_role_admin.sql` dijalankan, set role
+   `admin` untuk profil tertentu lewat SQL Editor:
 
-6. **Jalankan aplikasi**:
+   ```sql
+   update profiles set role = 'admin' where nama = 'Nama Guru';
+   ```
+
+   Admin bisa melihat rekap kehadiran lintas guru di `/admin`, dan sejak migrasi
+   `0009_admin_kelola_kelas.sql` dapat **membuat kelas + daftar santri atas nama
+   seorang guru** lewat `/admin/kelas-baru`.
+
+5. **(Model bersama, migrasi `0010_model_bersama.sql`)** — admin dapat membuat **data
+   bersama/bacaa**: tahun pelajaran, semester, mapel, kelas, dan santri dengan
+   `guru_id = NULL` lewat `/admin/kelas-baru`. Semua guru dapat **membaca** data
+   bersama ini (muncul di `/kelas`, `/tahun-pelajaran`, dst) dan **memakai**-nya
+   (mis. memilih mapel bersama saat membuat kelas sendiri), tetapi tidak dapat
+   mengubah/menghapusnya — hanya admin. Guru tetap bisa membuat data miliknya sendiri.
+   Absensi & tugas tetap bisa diisi pada kelas bersama oleh guru mana pun.
+
+6. **(Opsional) seed data contoh** — ubah email di `supabase/seed.sql` sesuai akun guru, jalankan di SQL Editor.
+
+7. **Jalankan aplikasi**:
 
    ```bash
    npm install

@@ -29,6 +29,11 @@ export default async function KelasDetailPage({
   if (!kelasData) notFound();
   const kelas = kelasData as unknown as KelasDetail;
   const aktif = kelas.tahun_pelajaran.status === "aktif";
+  // Kelas bersama (dibuat admin, guru_id NULL) hanya-baca untuk guru: santri
+  // & rosternya dikelola admin, tapi absensi/tugas tetap bisa diisi.
+  const pemilik =
+    (kelas as { guru_id?: string | null }).guru_id != null;
+  const dapatKelola = aktif && pemilik;
 
   const siswaList = (siswaData ?? []) as Siswa[];
 
@@ -47,7 +52,7 @@ export default async function KelasDetailPage({
         <p className="text-sm text-slate-500">
           {siswaList.length} santri · klik nama untuk melihat riwayat
         </p>
-        {aktif && (
+        {dapatKelola && (
           <div className="flex flex-col gap-2 sm:flex-row">
             {sumber && <SalinSantriButton kelasId={kelasId} sumber={sumber} />}
             <Link
@@ -63,7 +68,7 @@ export default async function KelasDetailPage({
       {siswaList.length === 0 ? (
         <p className="card text-sm text-slate-500">
           Belum ada santri.{" "}
-          {aktif && (
+          {dapatKelola && (
             <>
               <Link
                 href={`/kelas/${kelasId}/siswa/import`}
@@ -85,7 +90,7 @@ export default async function KelasDetailPage({
           )}
         </p>
       ) : (
-        <SiswaTable siswaList={siswaList} aktif={aktif} />
+        <SiswaTable siswaList={siswaList} aktif={dapatKelola} />
       )}
     </div>
   );

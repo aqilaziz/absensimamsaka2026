@@ -17,6 +17,7 @@ import {
   LayoutDashboard,
   LogOut,
   Search,
+  Shield,
   Users,
 } from "lucide-react";
 
@@ -124,6 +125,13 @@ async function SidebarContent() {
             <Archive size={16} /> Arsip
           </span>
         </NavLink>
+        {profil?.role === "admin" && (
+          <NavLink href="/admin">
+            <span className="flex items-center gap-2">
+              <Shield size={16} /> Admin
+            </span>
+          </NavLink>
+        )}
       </nav>
 
       {kelasList.length > 0 && (

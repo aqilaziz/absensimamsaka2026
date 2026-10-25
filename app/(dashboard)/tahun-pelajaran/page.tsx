@@ -12,6 +12,11 @@ interface TahunDenganKelas extends TahunPelajaran {
 
 export default async function TahunPelajaranPage() {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const uid = user?.id ?? null;
+
   const { data } = await supabase
     .from("tahun_pelajaran")
     .select("*, kelas(count), semester(*, kelas(count))")
@@ -41,13 +46,21 @@ export default async function TahunPelajaranPage() {
       )}
 
       <div className="space-y-3">
-        {tahunList.map((t) => (
+        {tahunList.map((t) => {
+          const sendiri =
+            (t as { guru_id?: string | null }).guru_id != null;
+          return (
           <div key={t.id} className="card space-y-3">
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
               <div className="flex min-w-0 flex-wrap items-center gap-3">
                 <span className="break-words text-lg font-semibold text-slate-900">
                   {t.nama}
                 </span>
+                {!sendiri && (
+                  <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-500">
+                    dari Admin
+                  </span>
+                )}
                 {t.status === "aktif" ? (
                   <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
                     Aktif
@@ -59,8 +72,12 @@ export default async function TahunPelajaranPage() {
                 )}
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <TahunForm tahun={t} />
-                <TahunRowActions id={t.id} status={t.status} nama={t.nama} />
+                {sendiri && (
+                  <>
+                    <TahunForm tahun={t} />
+                    <TahunRowActions id={t.id} status={t.status} nama={t.nama} />
+                  </>
+                )}
                 {t.status === "arsip" && (
                   <Link
                     href={`/arsip/${t.id}`}
@@ -108,7 +125,8 @@ export default async function TahunPelajaranPage() {
               {t.kelas[0]?.count ?? 0} kelas
             </p>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
