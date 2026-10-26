@@ -3,9 +3,12 @@ import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/admin";
 import { PersenBadge } from "@/components/persen-badge";
 import { labelSemester } from "@/lib/periode";
-import { temaMapel } from "@/lib/mapel";
+import { ChipMapel } from "./chip-mapel";
 import { PilihGuru } from "./pilih-guru";
 import type { AdminKelasRow, TahunPelajaran } from "@/lib/types";
+
+/** Jumlah chip yang dikirim bersama halaman; sisanya dimuat saat diklik. */
+const MAKS_CHIP = 6;
 
 interface GuruLite {
   id: string;
@@ -270,15 +273,17 @@ export default async function AdminDashboardPage({
       ) : (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {daftarKelas.map((k) => (
-            <Link
+            <div
               key={k.id}
-              href={`/admin/${k.id}?tahun=${pilihTahun.nama}`}
-              className="group flex flex-col rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 transition hover:shadow-md hover:ring-emerald-300"
+              className="flex flex-col rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 transition hover:shadow-md hover:ring-emerald-300"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm font-semibold text-slate-900 group-hover:text-emerald-700">
+                <Link
+                  href={`/admin/${k.id}?tahun=${pilihTahun.nama}`}
+                  className="text-sm font-semibold text-slate-900 hover:text-emerald-700"
+                >
                   {k.nama}
-                </p>
+                </Link>
                 <span className="text-[11px] font-medium text-slate-400">
                   {labelSemester(k.semester)}
                 </span>
@@ -287,37 +292,19 @@ export default async function AdminDashboardPage({
                 {k.santri} santri · {k.hari} hari · {k.guru.length} guru
               </p>
 
-              {/* Mapel + guru pengampu sebagai chip */}
-              <div className="mt-2 flex flex-wrap gap-1">
-                {k.mapel.length === 0 ? (
-                  <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700 ring-1 ring-amber-200">
-                    Belum ada pengampu
-                  </span>
-                ) : (
-                  k.mapel.map((m) => {
-                    const tema = temaMapel(m.warna);
-                    const daftarGuru =
-                      m.guru.length > 2
-                        ? `${m.guru.slice(0, 2).join(", ")} +${m.guru.length - 2}`
-                        : m.guru.join(", ");
-                    return (
-                      <span
-                        key={m.nama}
-                        title={`${m.nama} — ${m.guru.join(", ")}`}
-                        className={`inline-flex max-w-full items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${tema.badge}`}
-                      >
-                        <span
-                          className={`h-1.5 w-1.5 shrink-0 rounded-full ${tema.dot}`}
-                        />
-                        <span className="shrink-0">{m.nama}</span>
-                        <span className="truncate font-normal opacity-70">
-                          · {daftarGuru}
-                        </span>
-                      </span>
-                    );
-                  })
-                )}
-              </div>
+              {/* Chip mapel + guru: hanya beberapa yang dikirim, sisanya
+                  diambil saat tombol "+N mapel lainnya" diklik. */}
+              {k.mapel.length === 0 ? (
+                <span className="mt-2 inline-flex w-fit rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700 ring-1 ring-amber-200">
+                  Belum ada pengampu
+                </span>
+              ) : (
+                <ChipMapel
+                  kelasId={k.id}
+                  awal={k.mapel.slice(0, MAKS_CHIP)}
+                  total={k.mapel.length}
+                />
+              )}
 
               <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-3 text-xs text-slate-600">
                 <span>
@@ -342,7 +329,7 @@ export default async function AdminDashboardPage({
                   )}
                 </span>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       )}

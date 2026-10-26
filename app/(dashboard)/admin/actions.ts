@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { cekAdmin } from "@/lib/admin";
 import { adminKelasBaruSchema } from "@/lib/validations/admin-kelas";
 import type { ActionResult, Semester, TahunPelajaran } from "@/lib/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -153,4 +154,53 @@ export async function adminBuatKelas(input: unknown): Promise<ActionResult> {
   revalidatePath("/admin", "layout");
   revalidatePath("/kelas", "layout");
   return { ok: true };
+}
+
+export interface MapelPengampu {
+  nama: string;
+  warna: string | null;
+  guru: string[];
+}
+
+/**
+ * Mapel + guru pengampu satu kelas. Dipakai tombol "+N mapel lainnya" pada
+ * kartu rekap admin: data lengkap baru diambil saat benar-benar dibuka,
+ * sehingga halaman awal tetap ringan.
+ */
+export async function pengampuKelas(
+  kelasId: string,
+): Promise<
+  { ok: true; mapel: MapelPengampu[] } | { ok: false; error: string }
+> {
+  const supabase = await createClient();
+  if (!(await cekAdmin(supabase))) {
+    return { ok: false, error: "Hanya admin yang dapat melihat data ini" };
+  }
+  if (!/^[0-9a-fA-F-]{36}$/.test(kelasId)) {
+    return { ok: false, error: "Kelas tidak valid" };
+  }
+
+  const { data, error } = await supabase
+    .from("v_admin_rekap_kelas")
+    .select("mapel, mapel_warna, guru")
+    .eq("kelas_id", kelasId);
+
+  if (error) return { ok: false, error: error.message };
+
+  const peta = new Map<string, MapelPengampu>();
+  for (const r of (data ?? []) as {
+    mapel: string | null;
+    mapel_warna: string | null;
+    guru: string;
+  }[]) {
+    const nama = r.mapel ?? "Tanpa mapel";
+    const m = peta.get(nama) ?? { nama, warna: r.mapel_warna, guru: [] };
+    if (!m.guru.includes(r.guru)) m.guru.push(r.guru);
+    peta.set(nama, m);
+  }
+
+  return {
+    ok: true,
+    mapel: [...peta.values()].sort((a, b) => a.nama.localeCompare(b.nama)),
+  };
 }
