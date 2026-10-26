@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { addDays, format } from "date-fns";
+import { format } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import { mapelSaya } from "@/lib/kelas";
 import { KelasHeader } from "@/components/kelas-header";
 import { AbsensiGrid } from "./absensi-grid";
 import { RiwayatAbsensi, type HariAbsensi } from "./riwayat-absensi";
 import { JurnalForm } from "./jurnal-form";
-import { InputTanggal } from "@/components/input-tanggal";
+import { PemilihTanggal } from "./pemilih-tanggal";
 import type {
   Absensi,
   Jurnal,
@@ -15,7 +15,7 @@ import type {
   Siswa,
   StatusAbsensi,
 } from "@/lib/types";
-import { ChevronLeft, ChevronRight, History } from "lucide-react";
+import { History } from "lucide-react";
 
 export default async function AbsensiPage({
   params,
@@ -31,7 +31,6 @@ export default async function AbsensiPage({
       ? tanggalParam
       : format(new Date(), "yyyy-MM-dd");
 
-  const t0 = Date.now(); // TEMP timing: hapus setelah diagnosis
   const supabase = await createClient();
 
   // Semua query dijalankan bersamaan (kelas ikut Promise.all) agar satu round-trip saja.
@@ -69,8 +68,6 @@ export default async function AbsensiPage({
       .eq("tanggal", tanggal)
       .maybeSingle(),
   ]);
-  const tQuery = Date.now() - t0; // TEMP timing
-
   if (!kelasData) notFound();
   const kelas = kelasData as unknown as KelasDetail;
   kelas.mapel = await mapelSaya(supabase, kelasId);
@@ -101,47 +98,17 @@ export default async function AbsensiPage({
     a.tanggal < b.tanggal ? 1 : -1,
   );
 
-  console.log(`[timing] absensi kelas=${kelasId} tanggal=${tanggal} query=${tQuery}ms total=${Date.now() - t0}ms riwayat=${riwayatData?.length ?? 0}`); // TEMP timing
-
-  const kemarin = format(addDays(new Date(tanggal), -1), "yyyy-MM-dd");
-  const besok = format(addDays(new Date(tanggal), 1), "yyyy-MM-dd");
-
   return (
     <div className="space-y-6">
       <KelasHeader kelas={kelas} active="absensi" />
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-        <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href={`/kelas/${kelasId}/absensi?tanggal=${kemarin}`}
-            className="rounded-lg border border-slate-300 p-2 text-slate-500 hover:bg-slate-50"
-            aria-label="Hari sebelumnya"
-          >
-            <ChevronLeft size={16} />
-          </Link>
-          <form className="flex flex-wrap items-center gap-2">
-            <InputTanggal
-              name="tanggal"
-              required
-              defaultValue={tanggal}
-              min={kelas.semester?.tgl_mulai ?? kelas.tahun_pelajaran.tgl_mulai}
-              max={
-                kelas.semester?.tgl_selesai ?? kelas.tahun_pelajaran.tgl_selesai
-              }
-              className="w-[17.5rem] max-w-full"
-            />
-            <button type="submit" className="btn-secondary shrink-0 py-1.5">
-              Buka
-            </button>
-          </form>
-          <Link
-            href={`/kelas/${kelasId}/absensi?tanggal=${besok}`}
-            className="rounded-lg border border-slate-300 p-2 text-slate-500 hover:bg-slate-50"
-            aria-label="Hari berikutnya"
-          >
-            <ChevronRight size={16} />
-          </Link>
-        </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <PemilihTanggal
+          kelasId={kelasId}
+          tanggal={tanggal}
+          min={kelas.semester?.tgl_mulai ?? kelas.tahun_pelajaran.tgl_mulai}
+          max={kelas.semester?.tgl_selesai ?? kelas.tahun_pelajaran.tgl_selesai}
+        />
       </div>
 
       {tanggal !== format(new Date(), "yyyy-MM-dd") && (
