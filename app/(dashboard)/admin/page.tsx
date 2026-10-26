@@ -12,6 +12,43 @@ interface GuruLite {
   nama: string;
 }
 
+/** Angka dari view bisa berupa string (bigint) — samakan jadi number. */
+function angka(v: number | string | null | undefined): number {
+  const n = Number(v ?? 0);
+  return Number.isFinite(n) ? n : 0;
+}
+
+interface GuruDiKelas {
+  id: string;
+  nama: string;
+  hadir: number;
+  sakit: number;
+  izin: number;
+  alpha: number;
+  hari: number;
+}
+
+interface MapelDiKelas {
+  nama: string;
+  warna: string | null;
+  guru: string[];
+}
+
+interface KelasRekap {
+  id: string;
+  nama: string;
+  semester: AdminKelasRow["semester"];
+  santri: number;
+  guru: GuruDiKelas[];
+  mapel: MapelDiKelas[];
+  hadir: number;
+  sakit: number;
+  izin: number;
+  alpha: number;
+  hari: number;
+  persen: number | null;
+}
+
 export default async function AdminDashboardPage({
   searchParams,
 }: {
@@ -79,44 +116,92 @@ export default async function AdminDashboardPage({
   }));
   const adaTanpaPengampu = (kelasPerGuru.get("belum")?.size ?? 0) > 0;
 
-  // Kelompokkan per guru pengampu. Baris tanpa pengampu (kelas baru yang
-  // belum dicentang guru) dikelompokkan sebagai "Belum ada pengampu".
-  const kunciGuru = (r: AdminKelasRow) => r.guru_id ?? "belum";
-  const olehGuru = new Map<string, AdminKelasRow[]>();
-  for (const r of rowsFilter) {
-    const arr = olehGuru.get(kunciGuru(r)) ?? [];
-    arr.push(r);
-    olehGuru.set(kunciGuru(r), arr);
-  }
-  const urutanGuru = gurus
-    .filter((g) => olehGuru.has(g.id))
-    .map((g) => ({ guru: g, rows: olehGuru.get(g.id)! }));
-  // Kelompok yang tidak ada di daftar role guru (termasuk kelas tanpa pengampu).
-  const ekstra = [...olehGuru.keys()]
-    .filter((id) => !gurus.some((g) => g.id === id))
-    .map((id) => ({
-      guru: {
-        id,
-        nama:
-          rowsFilter.find((r) => kunciGuru(r) === id)?.guru ??
-          "Belum ada pengampu",
-      },
-      rows: olehGuru.get(id)!,
-    }));
-  const kelompok = [...urutanGuru, ...ekstra];
+  // ===== Gabungkan baris (kelas × mapel × guru) menjadi SATU kartu per kelas.
+  // View mengelompokkan per pengampu, jadi absensi guru yang mengampu dua
+  // mapel di kelas yang sama akan muncul di dua baris → guru didedup dulu
+  // sebelum dijumlahkan agar angka tidak dobel.
+  const perKelas = new Map<
+    string,
+    {
+      id: string;
+      nama: string;
+      semester: AdminKelasRow["semester"];
+      santri: number;
+      guru: Map<string, GuruDiKelas>;
+      mapel: Map<string, MapelDiKelas>;
+    }
+  >();
 
-  // Satu kelas bisa muncul beberapa baris (satu per pengampu) → hitung unik.
-  const santriPerKelas = new Map(rowsFilter.map((r) => [r.kelas_id, r.jumlah_santri]));
-  const totalKelas = santriPerKelas.size;
-  const totalSantri = [...santriPerKelas.values()].reduce((a, b) => a + b, 0);
+  for (const r of rowsFilter) {
+    let k = perKelas.get(r.kelas_id);
+    if (!k) {
+      k = {
+        id: r.kelas_id,
+        nama: r.kelas,
+        semester: r.semester,
+        santri: angka(r.jumlah_santri),
+        guru: new Map(),
+        mapel: new Map(),
+      };
+      perKelas.set(r.kelas_id, k);
+    }
+
+    const gid = r.guru_id ?? "belum";
+    if (!k.guru.has(gid)) {
+      k.guru.set(gid, {
+        id: gid,
+        nama: r.guru,
+        hadir: angka(r.hadir),
+        sakit: angka(r.sakit),
+        izin: angka(r.izin),
+        alpha: angka(r.alpha),
+        hari: angka(r.total_hari),
+      });
+    }
+
+    const kunciMapel = r.mapel ?? "__tanpa__";
+    const m = k.mapel.get(kunciMapel) ?? {
+      nama: r.mapel ?? "Tanpa mapel",
+      warna: r.mapel_warna,
+      guru: [] as string[],
+    };
+    if (!m.guru.includes(r.guru)) m.guru.push(r.guru);
+    k.mapel.set(kunciMapel, m);
+  }
+
+  const daftarKelas: KelasRekap[] = [...perKelas.values()]
+    .map((k) => {
+      const guruList = [...k.guru.values()];
+      const hadir = guruList.reduce((a, g) => a + g.hadir, 0);
+      const sakit = guruList.reduce((a, g) => a + g.sakit, 0);
+      const izin = guruList.reduce((a, g) => a + g.izin, 0);
+      const alpha = guruList.reduce((a, g) => a + g.alpha, 0);
+      const total = hadir + sakit + izin + alpha;
+      return {
+        id: k.id,
+        nama: k.nama,
+        semester: k.semester,
+        santri: k.santri,
+        guru: guruList,
+        mapel: [...k.mapel.values()].sort((a, b) => a.nama.localeCompare(b.nama)),
+        hadir,
+        sakit,
+        izin,
+        alpha,
+        hari: guruList.reduce((a, g) => Math.max(a, g.hari), 0),
+        persen: total > 0 ? Math.round((hadir / total) * 1000) / 10 : null,
+      };
+    })
+    .sort((a, b) => a.nama.localeCompare(b.nama));
+
+  const guruUnik = new Set(rowsFilter.map((r) => r.guru_id ?? "belum"));
+  const totalSantri = daftarKelas.reduce((a, k) => a + k.santri, 0);
   const rataHadir = (() => {
-    const punyaStat = rowsFilter.filter((r) => r.persen_hadir != null);
-    if (punyaStat.length === 0) return null;
+    const punya = daftarKelas.filter((k) => k.persen != null);
+    if (punya.length === 0) return null;
     return (
       Math.round(
-        (punyaStat.reduce((a, r) => a + Number(r.persen_hadir), 0) /
-          punyaStat.length) *
-          10,
+        (punya.reduce((a, k) => a + (k.persen ?? 0), 0) / punya.length) * 10,
       ) / 10
     );
   })();
@@ -165,8 +250,8 @@ export default async function AdminDashboardPage({
 
       {/* Kartu ringkasan */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Guru" value={kelompok.length} />
-        <StatCard label="Kelas" value={totalKelas} />
+        <StatCard label="Guru" value={guruUnik.size} />
+        <StatCard label="Kelas" value={daftarKelas.length} />
         <StatCard label="Total Santri" value={totalSantri} />
         <StatCard
           label="Rata-rata % Hadir"
@@ -174,7 +259,7 @@ export default async function AdminDashboardPage({
         />
       </div>
 
-      {kelompok.length === 0 ? (
+      {daftarKelas.length === 0 ? (
         <p className="card text-sm text-slate-500">
           {guruTerpilih === "belum"
             ? `Semua kelas di tahun ${pilihTahun.nama} sudah punya pengampu.`
@@ -183,74 +268,81 @@ export default async function AdminDashboardPage({
               : `Belum ada kelas di tahun ${pilihTahun.nama}.`}
         </p>
       ) : (
-        <div className="space-y-6">
-          {kelompok.map(({ guru, rows: kelasRows }) => (
-            <section key={guru.id}>
-              <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-slate-900">
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                {guru.nama}
-                <span className="text-xs font-normal text-slate-400">
-                  {kelasRows.length} kelas
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {daftarKelas.map((k) => (
+            <Link
+              key={k.id}
+              href={`/admin/${k.id}?tahun=${pilihTahun.nama}`}
+              className="group flex flex-col rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 transition hover:shadow-md hover:ring-emerald-300"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-semibold text-slate-900 group-hover:text-emerald-700">
+                  {k.nama}
+                </p>
+                <span className="text-[11px] font-medium text-slate-400">
+                  {labelSemester(k.semester)}
                 </span>
-              </h2>
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {kelasRows.map((r) => {
-                  const t = temaMapel(r.mapel_warna);
-                  return (
-                    <Link
-                      key={r.kelas_id}
-                      href={`/admin/${r.kelas_id}?tahun=${pilihTahun.nama}`}
-                      className={`group block rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 border-t-4 transition hover:shadow-md hover:ring-emerald-300 ${t.batang}`}
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-slate-900 group-hover:text-emerald-700">
-                          {r.kelas}
-                        </p>
-                        <span className="text-[11px] font-medium text-slate-400">
-                          {labelSemester(r.semester)}
-                        </span>
-                      </div>
-                      <div className="mt-1 flex items-center gap-2">
-                        {r.mapel && (
-                          <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1">
-                            <span
-                              className={`h-1.5 w-1.5 rounded-full ${t.dot}`}
-                            />
-                            {r.mapel}
-                          </span>
-                        )}
-                        <span className="text-[11px] text-slate-400">
-                          {r.jumlah_santri} santri · {r.total_hari} hari
-                        </span>
-                      </div>
-                      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600">
-                        <span>
-                          <b className="text-emerald-600">{r.hadir}</b> Hadir
-                        </span>
-                        <span>
-                          <b className="text-amber-600">{r.sakit}</b> Sakit
-                        </span>
-                        <span>
-                          <b className="text-sky-600">{r.izin}</b> Izin
-                        </span>
-                        <span>
-                          <b className="text-red-600">{r.alpha}</b> Alpha
-                        </span>
-                        <span className="ml-auto">
-                          {r.persen_hadir != null ? (
-                            <PersenBadge value={Number(r.persen_hadir)} />
-                          ) : (
-                            <span className="text-[11px] text-slate-400">
-                              belum ada absensi
-                            </span>
-                          )}
-                        </span>
-                      </div>
-                    </Link>
-                  );
-                })}
               </div>
-            </section>
+              <p className="mt-0.5 text-[11px] text-slate-400">
+                {k.santri} santri · {k.hari} hari · {k.guru.length} guru
+              </p>
+
+              {/* Mapel + guru pengampu sebagai chip */}
+              <div className="mt-2 flex flex-wrap gap-1">
+                {k.mapel.length === 0 ? (
+                  <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700 ring-1 ring-amber-200">
+                    Belum ada pengampu
+                  </span>
+                ) : (
+                  k.mapel.map((m) => {
+                    const tema = temaMapel(m.warna);
+                    const daftarGuru =
+                      m.guru.length > 2
+                        ? `${m.guru.slice(0, 2).join(", ")} +${m.guru.length - 2}`
+                        : m.guru.join(", ");
+                    return (
+                      <span
+                        key={m.nama}
+                        title={`${m.nama} — ${m.guru.join(", ")}`}
+                        className={`inline-flex max-w-full items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${tema.badge}`}
+                      >
+                        <span
+                          className={`h-1.5 w-1.5 shrink-0 rounded-full ${tema.dot}`}
+                        />
+                        <span className="shrink-0">{m.nama}</span>
+                        <span className="truncate font-normal opacity-70">
+                          · {daftarGuru}
+                        </span>
+                      </span>
+                    );
+                  })
+                )}
+              </div>
+
+              <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-3 text-xs text-slate-600">
+                <span>
+                  <b className="text-emerald-600">{k.hadir}</b> Hadir
+                </span>
+                <span>
+                  <b className="text-amber-600">{k.sakit}</b> Sakit
+                </span>
+                <span>
+                  <b className="text-sky-600">{k.izin}</b> Izin
+                </span>
+                <span>
+                  <b className="text-red-600">{k.alpha}</b> Alpha
+                </span>
+                <span className="ml-auto">
+                  {k.persen != null ? (
+                    <PersenBadge value={k.persen} />
+                  ) : (
+                    <span className="text-[11px] text-slate-400">
+                      belum ada absensi
+                    </span>
+                  )}
+                </span>
+              </div>
+            </Link>
           ))}
         </div>
       )}
