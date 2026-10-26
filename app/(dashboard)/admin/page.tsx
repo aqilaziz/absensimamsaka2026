@@ -59,9 +59,9 @@ export default async function AdminDashboardPage({
     ? rows.filter((r) => r.guru_id === guruTerpilih)
     : rows;
 
-  // Kelompokkan per pembuat kelas (urutkan sesuai daftar guru).
-  // Kelas buatan admin (guru_id NULL) dikelompokkan sebagai "bersama".
-  const kunciGuru = (r: AdminKelasRow) => r.guru_id ?? "bersama";
+  // Kelompokkan per guru pengampu. Baris tanpa pengampu (kelas baru yang
+  // belum dicentang guru) dikelompokkan sebagai "Belum ada pengampu".
+  const kunciGuru = (r: AdminKelasRow) => r.guru_id ?? "belum";
   const olehGuru = new Map<string, AdminKelasRow[]>();
   for (const r of rowsFilter) {
     const arr = olehGuru.get(kunciGuru(r)) ?? [];
@@ -71,21 +71,24 @@ export default async function AdminDashboardPage({
   const urutanGuru = gurus
     .filter((g) => olehGuru.has(g.id))
     .map((g) => ({ guru: g, rows: olehGuru.get(g.id)! }));
-  // Kelompok yang tidak ada di daftar role guru (termasuk kelas bersama).
+  // Kelompok yang tidak ada di daftar role guru (termasuk kelas tanpa pengampu).
   const ekstra = [...olehGuru.keys()]
     .filter((id) => !gurus.some((g) => g.id === id))
     .map((id) => ({
       guru: {
         id,
         nama:
-          rowsFilter.find((r) => kunciGuru(r) === id)?.guru ?? "Bersama (Admin)",
+          rowsFilter.find((r) => kunciGuru(r) === id)?.guru ??
+          "Belum ada pengampu",
       },
       rows: olehGuru.get(id)!,
     }));
   const kelompok = [...urutanGuru, ...ekstra];
 
-  const totalKelas = rowsFilter.length;
-  const totalSantri = rowsFilter.reduce((a, r) => a + r.jumlah_santri, 0);
+  // Satu kelas bisa muncul beberapa baris (satu per pengampu) → hitung unik.
+  const santriPerKelas = new Map(rowsFilter.map((r) => [r.kelas_id, r.jumlah_santri]));
+  const totalKelas = santriPerKelas.size;
+  const totalSantri = [...santriPerKelas.values()].reduce((a, b) => a + b, 0);
   const rataHadir = (() => {
     const punyaStat = rowsFilter.filter((r) => r.persen_hadir != null);
     if (punyaStat.length === 0) return null;

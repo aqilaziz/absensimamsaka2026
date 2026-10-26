@@ -4,23 +4,29 @@ import { KelasForm } from "./kelas-form";
 import { KelasDeleteButton } from "./kelas-delete-button";
 import { MapelKelola } from "./mapel-kelola";
 import { MapelBadge } from "@/components/mapel-badge";
-import { temaMapel } from "@/lib/mapel";
 import {
   formatTanggal,
   labelSemester,
   semesterAktifHariIni,
 } from "@/lib/periode";
 import type {
-  Kelas,
   Mapel,
   NamaSemester,
+  Profile,
   Semester,
   TahunPelajaran,
+  WarnaMapel,
 } from "@/lib/types";
 
-interface KelasDenganSiswa extends Kelas {
-  siswa: { count: number }[];
-  mapel?: Pick<Mapel, "nama" | "warna"> | null;
+interface KelasKartu {
+  id: string;
+  nama: string;
+  semester_id: string;
+  jumlahSantri: number;
+  /** Mapel yang diampu guru yang sedang login (kosong untuk admin). */
+  mapelSaya: Pick<Mapel, "nama" | "warna">[];
+  /** Jumlah pengampu (dipakai admin). */
+  jumlahPengampu: number;
 }
 
 export default async function KelasPage({
@@ -35,7 +41,7 @@ export default async function KelasPage({
     .from("profiles")
     .select("id, role")
     .single();
-  const profil = profile as { id: string; role: string } | null;
+  const profil = profile as Pick<Profile, "id" | "role"> | null;
   const uid = profil?.id ?? null;
   const isAdmin = profil?.role === "admin";
 
@@ -45,49 +51,108 @@ export default async function KelasPage({
     .from("tahun_pelajaran")
     .select("*")
     .eq("status", "aktif");
-  const aktifList = (tahunAktifArr ?? []) as TahunPelajaran[];
-  const tahun = aktifList[0] ?? null;
+  const tahun = ((tahunAktifArr ?? []) as TahunPelajaran[])[0] ?? null;
 
   if (!tahun) {
     return (
       <div className="card max-w-lg text-sm text-slate-600">
         Belum ada tahun pelajaran aktif.{" "}
-        <Link
-          href="/tahun-pelajaran"
-          className="font-semibold text-emerald-700 hover:underline"
-        >
-          Buat tahun pelajaran dulu
-        </Link>
+        {isAdmin ? (
+          <Link
+            href="/tahun-pelajaran"
+            className="font-semibold text-emerald-700 hover:underline"
+          >
+            Buat tahun pelajaran dulu
+          </Link>
+        ) : (
+          "Hubungi admin madrasah untuk menyiapkannya."
+        )}
         .
       </div>
     );
   }
 
-  const [{ data: semData }, { data: data }, { data: mapelData }] =
-    await Promise.all([
-      supabase
-        .from("semester")
-        .select("*")
-        .eq("tahun_pelajaran_id", tahun.id)
-        .order("urutan"),
-      supabase
-        .from("kelas")
-        .select(
-          "*, siswa(count), mapel:mapel!kelas_mapel_id_fkey(nama, warna), semester:semester!kelas_semester_id_fkey(nama)",
-        )
-        .eq("tahun_pelajaran_id", tahun.id)
-        .order("nama"),
-      supabase.from("mapel").select("*").order("nama"),
-    ]);
+  const [{ data: semData }, { data: mapelData }] = await Promise.all([
+    supabase
+      .from("semester")
+      .select("*")
+      .eq("tahun_pelajaran_id", tahun.id)
+      .order("urutan"),
+    supabase.from("mapel").select("*").order("nama"),
+  ]);
 
   const semesters = (semData ?? []) as Semester[];
   const mapels = (mapelData ?? []) as Mapel[];
 
-  // Mapel adalah daftar bersama; guru hanya boleh mengubah mapel yang ia buat
-  // sendiri (mapel bersama/admin dikelola admin).
-  const mapelSendiri = isAdmin
-    ? mapels
-    : mapels.filter((m) => m.guru_id === uid);
+  let kelasList: KelasKartu[] = [];
+
+  if (isAdmin) {
+    const [{ data: kelasData }, { data: pengampuData }] = await Promise.all([
+      supabase
+        .from("kelas")
+        .select("id, nama, semester_id, siswa(count)")
+        .eq("tahun_pelajaran_id", tahun.id)
+        .order("nama"),
+      supabase.from("kelas_ajar").select("kelas_id"),
+    ]);
+
+    const hitungPengampu = new Map<string, number>();
+    for (const p of (pengampuData ?? []) as { kelas_id: string }[]) {
+      hitungPengampu.set(p.kelas_id, (hitungPengampu.get(p.kelas_id) ?? 0) + 1);
+    }
+
+    kelasList = ((kelasData ?? []) as unknown as {
+      id: string;
+      nama: string;
+      semester_id: string;
+      siswa: { count: number }[];
+    }[]).map((k) => ({
+      id: k.id,
+      nama: k.nama,
+      semester_id: k.semester_id,
+      jumlahSantri: k.siswa?.[0]?.count ?? 0,
+      mapelSaya: [],
+      jumlahPengampu: hitungPengampu.get(k.id) ?? 0,
+    }));
+  } else if (uid) {
+    // Guru hanya melihat kelas yang ia centang di halaman "Ambil Kelas".
+    const { data } = await supabase
+      .from("kelas_ajar")
+      .select(
+        "kelas_id, mapel:mapel!kelas_ajar_mapel_id_fkey(nama, warna), kelas:kelas!kelas_ajar_kelas_id_fkey(id, nama, semester_id, tahun_pelajaran_id, siswa(count))",
+      )
+      .eq("guru_id", uid);
+
+    const baris = (data ?? []) as unknown as {
+      mapel: Pick<Mapel, "nama" | "warna"> | null;
+      kelas: {
+        id: string;
+        nama: string;
+        semester_id: string;
+        tahun_pelajaran_id: string;
+        siswa: { count: number }[];
+      } | null;
+    }[];
+
+    const peta = new Map<string, KelasKartu>();
+    for (const r of baris) {
+      const k = r.kelas;
+      if (!k || k.tahun_pelajaran_id !== tahun.id) continue;
+      const kartu = peta.get(k.id) ?? {
+        id: k.id,
+        nama: k.nama,
+        semester_id: k.semester_id,
+        jumlahSantri: k.siswa?.[0]?.count ?? 0,
+        mapelSaya: [],
+        jumlahPengampu: 0,
+      };
+      if (r.mapel) kartu.mapelSaya.push(r.mapel);
+      peta.set(k.id, kartu);
+    }
+    kelasList = [...peta.values()].sort((a, b) =>
+      a.nama.localeCompare(b.nama),
+    );
+  }
 
   const pilihan: NamaSemester =
     sp.semester === "genap" || sp.semester === "ganjil"
@@ -106,19 +171,9 @@ export default async function KelasPage({
     );
   }
 
-  const kelasSemester = (data ?? []) as unknown as (KelasDenganSiswa & {
-    semester: { nama: NamaSemester } | null;
-  })[];
-
-  // Ambil hanya kelas pada semester yang sedang dipilih, lalu buang field
-  // bantu `semester` agar bentuknya kembali menjadi KelasDenganSiswa.
-  const kelasList: KelasDenganSiswa[] = kelasSemester
-    .filter((k) =>
-      k.semester
-        ? k.semester.nama === semester.nama
-        : k.semester_id === semester.id,
-    )
-    .map(({ semester: _semesterBantu, ...rest }) => rest);
+  const kelasSemester = kelasList.filter(
+    (k) => k.semester_id === semester.id,
+  );
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -133,11 +188,13 @@ export default async function KelasPage({
             {formatTanggal(semester.tgl_selesai)})
           </p>
         </div>
-        <KelasForm
-          semesters={semesters}
-          mapels={mapels}
-          semesterAwal={semester.id}
-        />
+        {isAdmin ? (
+          <KelasForm semesters={semesters} semesterAwal={semester.id} />
+        ) : (
+          <Link href="/ambil-kelas" className="btn-primary">
+            + Ambil Kelas
+          </Link>
+        )}
       </div>
 
       {/* Pilih semester: Ganjil / Genap */}
@@ -157,61 +214,91 @@ export default async function KelasPage({
         ))}
       </div>
 
-      <MapelKelola mapels={mapelSendiri} />
+      {isAdmin && <MapelKelola mapels={mapels} />}
 
-      {kelasList.length === 0 ? (
+      {kelasSemester.length === 0 ? (
         <p className="card text-sm text-slate-500">
-          Belum ada kelas di {labelSemester(semester.nama)}. Klik{" "}
-          <b>Buat Kelas</b> untuk menambah.
+          {isAdmin ? (
+            <>
+              Belum ada kelas di {labelSemester(semester.nama)}. Klik{" "}
+              <b>Buat Kelas</b> untuk menambah.
+            </>
+          ) : (
+            <>
+              Anda belum mengambil kelas di {labelSemester(semester.nama)}.{" "}
+              <Link
+                href="/ambil-kelas"
+                className="font-semibold text-emerald-700 hover:underline"
+              >
+                Ambil kelas sekarang
+              </Link>
+              .
+            </>
+          )}
         </p>
       ) : (
         <div className="space-y-3">
-          {kelasList.map((k) => {
-            const t = temaMapel(k.mapel?.warna);
-            const sendiri = isAdmin || (uid != null && k.guru_id === uid);
-            return (
-              <div
-                key={k.id}
-                className={`card relative flex flex-col gap-3 border-l-4 transition hover:ring-emerald-300 hover:shadow-md sm:flex-row sm:flex-wrap sm:items-center sm:justify-between ${t.batang}`}
-              >
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {/* Stretched link: ::after menutupi seluruh kartu sehingga
-                        klik di mana pun membuka detail kelas. Tombol Edit/Hapus
-                        di bawahnya diberi `relative z-10`. */}
-                    <Link
-                      href={`/kelas/${k.id}`}
-                      className="break-words text-base font-semibold text-slate-900 after:absolute after:inset-0 after:rounded-xl hover:text-emerald-700"
-                    >
-                      {k.nama}
-                    </Link>
-                    <MapelBadge mapel={k.mapel} />
-                    {k.guru_id === null && (
-                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
-                        dari Admin
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-slate-400">
-                    {k.siswa[0]?.count ?? 0} santri
-                  </p>
+          {kelasSemester.map((k) => (
+            <div
+              key={k.id}
+              className="card relative flex flex-col gap-3 border-l-4 border-l-emerald-500 transition hover:ring-emerald-300 hover:shadow-md sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
+            >
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Stretched link: ::after menutupi seluruh kartu sehingga
+                      klik di mana pun membuka detail kelas. Tombol Edit/Hapus
+                      di bawahnya diberi `relative z-10`. */}
+                  <Link
+                    href={`/kelas/${k.id}`}
+                    className="break-words text-base font-semibold text-slate-900 after:absolute after:inset-0 after:rounded-xl hover:text-emerald-700"
+                  >
+                    {k.nama}
+                  </Link>
+                  {k.mapelSaya.map((m) => (
+                    <MapelBadge key={m.nama} mapel={m} />
+                  ))}
                 </div>
-                <div className="relative z-10 flex flex-wrap items-center gap-2">
-                  {sendiri && (
-                    <>
-                      <KelasForm
-                        kelas={k}
-                        semesters={semesters}
-                        mapels={mapels}
-                        semesterAwal={semester.id}
-                      />
-                      <KelasDeleteButton kelasId={k.id} nama={k.nama} />
-                    </>
-                  )}
-                </div>
+                <p className="text-xs text-slate-400">
+                  {k.jumlahSantri} santri
+                  {isAdmin && ` · ${k.jumlahPengampu} pengampu`}
+                </p>
               </div>
-            );
-          })}
+
+              <div className="relative z-10 flex flex-wrap items-center gap-2">
+                {isAdmin ? (
+                  <>
+                    <KelasForm
+                      kelas={k}
+                      semesters={semesters}
+                      semesterAwal={semester.id}
+                    />
+                    <KelasDeleteButton kelasId={k.id} nama={k.nama} />
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href={`/kelas/${k.id}/absensi`}
+                      className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
+                    >
+                      Absensi
+                    </Link>
+                    <Link
+                      href={`/kelas/${k.id}/tugas`}
+                      className="rounded-full bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700 hover:bg-sky-100"
+                    >
+                      Tugas
+                    </Link>
+                    <Link
+                      href={`/kelas/${k.id}/rekap`}
+                      className="rounded-full bg-violet-50 px-3 py-1 text-xs font-medium text-violet-700 hover:bg-violet-100"
+                    >
+                      Rekap
+                    </Link>
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

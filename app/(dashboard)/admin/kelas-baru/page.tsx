@@ -2,35 +2,32 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/admin";
 import { KelasBaruForm } from "./kelas-baru-form";
-import type { Mapel, Semester, TahunPelajaran } from "@/lib/types";
+import type { Semester, TahunPelajaran } from "@/lib/types";
 
 export default async function AdminKelasBaruPage() {
   await requireAdmin();
   const supabase = await createClient();
 
-  const [tahunRes, semRes, mapelRes] = await Promise.all([
+  const [tahunRes, semRes] = await Promise.all([
     supabase.from("tahun_pelajaran").select("*").order("tgl_mulai", {
       ascending: false,
     }),
     supabase.from("semester").select("*").order("urutan"),
-    supabase.from("mapel").select("*").order("nama"),
   ]);
 
   const tahunList = (tahunRes.data ?? []) as TahunPelajaran[];
   const semList = (semRes.data ?? []) as Semester[];
-  const mapelList = (mapelRes.data ?? []) as Mapel[];
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">
-            Buat Kelas Bersama (Admin)
+            Buat Kelas (Admin)
           </h1>
           <p className="text-sm text-slate-500">
-            Siapkan tahun pelajaran, kelas, mata pelajaran & daftar santri yang
-            langsung dipakai semua guru. Bila admin belum membuatnya, guru juga
-            bisa membuat sendiri dan hasilnya tetap terpakai bersama.
+            Siapkan rombel beserta daftar santrinya. Guru nanti mencentang kelas
+            ini dan memilih mapel yang ia ampu lewat menu Ambil Kelas.
           </p>
         </div>
         <Link href="/admin" className="btn-secondary">
@@ -38,11 +35,7 @@ export default async function AdminKelasBaruPage() {
         </Link>
       </div>
 
-      <KelasBaruForm
-        tahunList={tahunList}
-        semList={semList}
-        mapelList={mapelList}
-      />
+      <KelasBaruForm tahunList={tahunList} semList={semList} />
     </div>
   );
 }

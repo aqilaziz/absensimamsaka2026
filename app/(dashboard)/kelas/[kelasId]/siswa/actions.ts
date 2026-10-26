@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { cekAdmin } from "@/lib/admin";
 import { importSiswaSchema } from "@/lib/validations/siswa";
 import type { ActionResult } from "@/lib/types";
 
@@ -12,6 +13,9 @@ export async function importSiswa(input: unknown): Promise<ActionResult> {
   }
 
   const supabase = await createClient();
+  if (!(await cekAdmin(supabase))) {
+    return { ok: false, error: "Hanya admin yang dapat mengubah daftar santri" };
+  }
   const {
     data: { user },
   } = await supabase.auth.getUser();

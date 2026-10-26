@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import type { Profile } from "@/lib/types";
 
@@ -7,6 +8,12 @@ export async function getProfile(): Promise<Profile | null> {
   const supabase = await createClient();
   const { data } = await supabase.from("profiles").select("*").single();
   return (data as Profile | null) ?? null;
+}
+
+/** Versi boolean dari guard admin, untuk dipakai di server action. */
+export async function cekAdmin(supabase: SupabaseClient): Promise<boolean> {
+  const { data } = await supabase.from("profiles").select("role").single();
+  return (data as { role?: string } | null)?.role === "admin";
 }
 
 /**

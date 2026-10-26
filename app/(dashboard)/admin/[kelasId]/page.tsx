@@ -33,7 +33,7 @@ export default async function AdminKelasDetailPage({
   const { data: kelasData } = await supabase
     .from("kelas")
     .select(
-      "*, tahun_pelajaran(*), mapel:mapel!kelas_mapel_id_fkey(*), semester:semester!kelas_semester_id_fkey(*)",
+      "*, tahun_pelajaran(*), semester:semester!kelas_semester_id_fkey(*)",
     )
     .eq("id", kelasId)
     .maybeSingle();
@@ -41,14 +41,24 @@ export default async function AdminKelasDetailPage({
   if (!kelasData) notFound();
   const kelas = kelasData as unknown as KelasDetail;
 
-  const { data: guruData } = kelas.guru_id
-    ? await supabase
-        .from("profiles")
-        .select("nama")
-        .eq("id", kelas.guru_id)
-        .maybeSingle()
-    : { data: null };
-  const guruNama = guruData?.nama ?? "Bersama (Admin)";
+  // Guru pengampu kelas ini (bisa lebih dari satu, satu per mapel).
+  const { data: pengampuData } = await supabase
+    .from("kelas_ajar")
+    .select(
+      "guru:profiles!kelas_ajar_guru_id_fkey(nama), mapel:mapel!kelas_ajar_mapel_id_fkey(nama)",
+    )
+    .eq("kelas_id", kelasId);
+
+  const daftarPengampu = (pengampuData ?? []) as unknown as {
+    guru: { nama: string } | null;
+    mapel: { nama: string } | null;
+  }[];
+  const guruNama =
+    daftarPengampu.length > 0
+      ? daftarPengampu
+          .map((p) => `${p.guru?.nama ?? "-"} (${p.mapel?.nama ?? "-"})`)
+          .join(", ")
+      : "Belum ada pengampu";
 
   const rentang = hitungRentang(periode, nilai, kelas.tahun_pelajaran);
 

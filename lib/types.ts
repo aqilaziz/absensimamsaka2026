@@ -28,7 +28,9 @@ export interface Profile {
 /** Baris rekap per kelas untuk Dashboard Admin (view v_admin_rekap_kelas). */
 export interface AdminKelasRow {
   kelas_id: string;
-  /** Pembuat kelas; NULL bila dibuat admin (data bersama). */
+  /** ID baris pengampu; NULL bila kelas belum diambil guru mana pun. */
+  pengampu_id: string | null;
+  /** Guru pengampu; NULL bila belum ada. */
   guru_id: string | null;
   guru: string;
   kelas: string;
@@ -81,14 +83,24 @@ export interface Mapel {
   created_at: string;
 }
 
+/** Rombel: kelas tidak lagi menempel pada satu mapel. Mapel ditentukan
+ *  lewat pengampu (lihat `KelasAjar`). */
 export interface Kelas {
   id: string;
   tahun_pelajaran_id: string;
   semester_id: string;
-  mapel_id: string | null;
-  /** NULL bila kelas bersama (dibuat admin). */
+  /** Dibuat admin; NULL untuk data lama. */
   guru_id: string | null;
   nama: string;
+  created_at: string;
+}
+
+/** Pengampu: guru yang mencentang sebuah kelas untuk satu mapel. */
+export interface KelasAjar {
+  id: string;
+  kelas_id: string;
+  mapel_id: string;
+  guru_id: string;
   created_at: string;
 }
 
@@ -231,7 +243,12 @@ export interface RiwayatTahunRow {
 export interface KelasDetail extends Kelas {
   tahun_pelajaran: TahunPelajaran;
   semester?: Semester;
+  /** Mapel yang diampu guru yang sedang login di kelas ini (diisi per halaman). */
   mapel?: Mapel | null;
+  /** Seluruh pengampu kelas ini (dipakai halaman admin). */
+  pengampu?: (KelasAjar & {
+    mapel?: Pick<Mapel, "nama" | "warna"> | null;
+  })[];
 }
 
 /** Hasil pencarian santri: data santri + kelas induknya (beserta tahun). */

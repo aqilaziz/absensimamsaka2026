@@ -7,63 +7,9 @@ import type { ActionResult, Semester, TahunPelajaran } from "@/lib/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
- * Tentukan mapel untuk kelas bersama: pakai mapel bersama yang sudah ada,
- * atau buat mapel BERSAMA baru (guru_id = NULL).
- */
-async function siapkanMapelAdmin(
-  supabase: SupabaseClient,
-  data: { mapel_id?: string; mapel_baru?: { nama: string; warna: string } },
-): Promise<{ mapelId?: string; error?: string }> {
-  if (data.mapel_id) {
-    const { data: mapel } = await supabase
-      .from("mapel")
-      .select("id")
-      .eq("id", data.mapel_id)
-      .maybeSingle();
-    if (!mapel) return { error: "Mata pelajaran tidak ditemukan" };
-    return { mapelId: (mapel as { id: string }).id };
-  }
-
-  if (data.mapel_baru) {
-    const nama = data.mapel_baru.nama.trim();
-
-    // Mapel adalah daftar bersama: pakai yang sudah ada (siapa pun pembuatnya).
-    const { data: semua } = await supabase.from("mapel").select("id, nama");
-    const sama = ((semua ?? []) as { id: string; nama: string }[]).find(
-      (m) => m.nama.trim().toLowerCase() === nama.toLowerCase(),
-    );
-    if (sama) return { mapelId: sama.id };
-
-    const { data: mapel, error } = await supabase
-      .from("mapel")
-      .insert({
-        guru_id: null,
-        nama,
-        warna: data.mapel_baru.warna,
-      })
-      .select("id")
-      .single();
-    if (error) {
-      if (error.code === "23505") {
-        const { data: ulang } = await supabase.from("mapel").select("id, nama");
-        const ada = ((ulang ?? []) as { id: string; nama: string }[]).find(
-          (m) => m.nama.trim().toLowerCase() === nama.toLowerCase(),
-        );
-        if (ada) return { mapelId: ada.id };
-        return { error: "Mata pelajaran sudah ada" };
-      }
-      return { error: error.message };
-    }
-    return { mapelId: (mapel as { id: string }).id };
-  }
-
-  return { error: "Pilih atau buat mata pelajaran dulu" };
-}
-
-/**
- * Tentukan tahun & semester untuk kelas bersama:
- *   • buat tahun BERSAMA baru (trigger membuat kedua semester otomatis), atau
- *   • pakai tahun & semester bersama yang sudah ada.
+ * Tentukan tahun & semester untuk rombel:
+ *   • buat tahun baru (trigger membuat kedua semester otomatis), atau
+ *   • pakai tahun & semester yang sudah ada.
  */
 async function siapkanTahunDanSemester(
   supabase: SupabaseClient,
@@ -139,7 +85,7 @@ async function siapkanTahunDanSemester(
   return { tahunId: semester.tahun_pelajaran_id, semesterId: semester.id };
 }
 
-/** Buat kelas + daftar santri BERSAMA (guru_id = NULL, hanya admin). */
+/** Buat rombel + daftar santri (guru_id = NULL, hanya admin). */
 export async function adminBuatKelas(input: unknown): Promise<ActionResult> {
   const parsed = adminKelasBaruSchema.safeParse(input);
   if (!parsed.success) {
@@ -167,15 +113,11 @@ export async function adminBuatKelas(input: unknown): Promise<ActionResult> {
   const tahun = await siapkanTahunDanSemester(supabase, parsed.data);
   if (tahun.error) return { ok: false, error: tahun.error };
 
-  const mapel = await siapkanMapelAdmin(supabase, parsed.data);
-  if (mapel.error) return { ok: false, error: mapel.error };
-
   const { data: kelasData, error: kelasErr } = await supabase
     .from("kelas")
     .insert({
       tahun_pelajaran_id: tahun.tahunId,
       semester_id: tahun.semesterId,
-      mapel_id: mapel.mapelId,
       guru_id: null,
       nama: parsed.data.nama,
     })
@@ -186,8 +128,7 @@ export async function adminBuatKelas(input: unknown): Promise<ActionResult> {
     if (kelasErr.code === "23505") {
       return {
         ok: false,
-        error:
-          "Kelas dengan nama & mata pelajaran ini sudah ada di semester tersebut",
+        error: "Kelas dengan nama ini sudah ada di semester tersebut",
       };
     }
     return { ok: false, error: kelasErr.message };

@@ -30,13 +30,19 @@ export async function createTahun(input: unknown): Promise<ActionResult> {
     .select("role")
     .single();
   const isAdmin = (profile as { role?: string } | null)?.role === "admin";
+  if (!isAdmin) {
+    return {
+      ok: false,
+      error: "Hanya admin yang dapat membuat tahun pelajaran",
+    };
+  }
 
   // Tanggal semester otomatis dari nama tahun:
   // Ganjil 1 Juli–31 Des (tahun pertama), Genap 1 Jan–30 Jun (tahun kedua).
   const [awal, akhir] = parsed.data.nama.split("/").map(Number);
   const row = {
     nama: parsed.data.nama,
-    guru_id: isAdmin ? null : userId,
+    guru_id: null,
     tgl_mulai: `${awal}-07-01`,
     batas_semester: `${awal}-12-31`,
     tgl_selesai: `${akhir}-06-30`,

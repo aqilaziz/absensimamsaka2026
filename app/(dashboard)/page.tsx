@@ -1,12 +1,9 @@
 import Link from "next/link";
 import { format } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
-import { MapelBadge } from "@/components/mapel-badge";
-import { temaMapel } from "@/lib/mapel";
+import { ambilKelasSaya, type KelasRingkas } from "@/lib/kelas";
 import { labelSemester, semesterAktifHariIni } from "@/lib/periode";
 import type {
-  Kelas,
-  Mapel,
   NamaSemester,
   Profile,
   Semester,
@@ -28,12 +25,12 @@ export default async function DashboardPage() {
   ]);
 
   const profil = profile as Profile | null;
+  const isAdmin = profil?.role === "admin";
   // Hanya ada satu tahun pelajaran aktif untuk seluruh madrasah.
   const aktif = (aktifList ?? []) as TahunPelajaran[];
   const tahun = aktif[0] ?? null;
 
-  let kelasList: (Kelas & { mapel?: Pick<Mapel, "nama" | "warna"> | null })[] =
-    [];
+  let kelasList: KelasRingkas[] = [];
   let jumlahSantri = 0;
   let absensiHariIni = 0;
   let jumlahTugas = 0;
@@ -41,25 +38,27 @@ export default async function DashboardPage() {
   let semesterBerjalan: Semester | null = null;
 
   if (tahun) {
-    const [resKelas, resSemester] = await Promise.all([
-      supabase
-        .from("kelas")
-        .select("*, mapel:mapel!kelas_mapel_id_fkey(nama, warna)")
-        .eq("tahun_pelajaran_id", tahun.id)
-        .order("nama"),
-      supabase
-        .from("semester")
-        .select("*")
-        .eq("tahun_pelajaran_id", tahun.id)
-        .order("urutan"),
-    ]);
-    kelasList = (resKelas.data ?? []) as (Kelas & {
-      mapel?: Pick<Mapel, "nama" | "warna"> | null;
-    })[];
-    const semesters = (resSemester.data ?? []) as Semester[];
+    const { data: semData } = await supabase
+      .from("semester")
+      .select("*")
+      .eq("tahun_pelajaran_id", tahun.id)
+      .order("urutan");
+    const semesters = (semData ?? []) as Semester[];
     semesters.forEach((s) => semesterOf.set(s.id, s.nama));
     semesterBerjalan =
       semesters.find((s) => s.nama === semesterAktifHariIni(tahun)) ?? null;
+
+    if (isAdmin) {
+      const { data } = await supabase
+        .from("kelas")
+        .select("id, nama, semester_id")
+        .eq("tahun_pelajaran_id", tahun.id)
+        .order("nama");
+      kelasList = (data ?? []) as KelasRingkas[];
+    } else if (profil?.id) {
+      // Guru hanya melihat kelas yang sudah ia centang di "Ambil Kelas".
+      kelasList = await ambilKelasSaya(supabase, profil.id, tahun.id);
+    }
 
     const kelasIds = kelasList.map((k) => k.id);
     if (kelasIds.length > 0) {
@@ -93,15 +92,18 @@ export default async function DashboardPage() {
           Selamat datang, {profil?.nama ?? "Guru"}
         </h1>
         <p className="mt-2 text-sm text-slate-500">
-          Mulai dengan membuat tahun pelajaran aktif, lalu buat kelas dan impor
-          daftar santri.
+          {isAdmin
+            ? "Mulai dengan membuat tahun pelajaran aktif, lalu buat kelas dan impor daftar santri."
+            : "Admin madrasah belum membuat tahun pelajaran aktif. Coba lagi nanti."}
         </p>
-        <Link
-          href="/tahun-pelajaran"
-          className="mt-6 inline-block rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700"
-        >
-          Buat Tahun Pelajaran
-        </Link>
+        {isAdmin && (
+          <Link
+            href="/tahun-pelajaran"
+            className="mt-6 inline-block rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700"
+          >
+            Buat Tahun Pelajaran
+          </Link>
+        )}
       </div>
     );
   }
@@ -114,8 +116,7 @@ export default async function DashboardPage() {
         </h1>
         <p className="text-sm text-slate-500">
           Tahun pelajaran {tahun.nama}
-          {semesterBerjalan &&
-            ` · ${labelSemester(semesterBerjalan.nama)}`} ·{" "}
+          {semesterBerjalan && ` · ${labelSemester(semesterBerjalan.nama)}`} ·{" "}
           {format(new Date(), "EEEE, d MMMM yyyy")}
         </p>
       </div>
@@ -145,69 +146,79 @@ export default async function DashboardPage() {
 
       <div>
         <h2 className="mb-3 text-lg font-semibold text-slate-900">
-          Kelas
+          {isAdmin ? "Kelas" : "Kelas yang Anda ampu"}
         </h2>
         {kelasList.length === 0 ? (
           <p className="rounded-xl bg-white p-6 text-sm text-slate-500 ring-1 ring-slate-200">
-            Belum ada kelas.{" "}
-            <Link
-              href="/kelas"
-              className="font-semibold text-emerald-700 hover:underline"
-            >
-              Buat kelas pertama
-            </Link>
+            {isAdmin ? (
+              <>
+                Belum ada kelas.{" "}
+                <Link
+                  href="/kelas"
+                  className="font-semibold text-emerald-700 hover:underline"
+                >
+                  Buat kelas pertama
+                </Link>
+              </>
+            ) : (
+              <>
+                Anda belum mengambil kelas.{" "}
+                <Link
+                  href="/ambil-kelas"
+                  className="font-semibold text-emerald-700 hover:underline"
+                >
+                  Ambil kelas di sini
+                </Link>
+              </>
+            )}
           </p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {kelasList.map((k) => {
-              const t = temaMapel(k.mapel?.warna);
-              return (
-                <div
-                  key={k.id}
-                  className={`relative rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200 border-t-4 transition hover:ring-emerald-300 hover:shadow-md ${t.batang}`}
-                >
-                  <div className="flex flex-wrap items-center gap-2">
-                    {/* Stretched link: ::after menutupi seluruh kartu sehingga
-                        klik di mana pun membuka detail kelas. Elemen interaktif
-                        lain di dalam kartu perlu `relative z-10`. */}
-                    <Link
-                      href={`/kelas/${k.id}`}
-                      className="text-base font-semibold text-slate-900 after:absolute after:inset-0 after:rounded-xl hover:text-emerald-700"
-                    >
-                      {k.nama}
-                    </Link>
-                    <MapelBadge mapel={k.mapel} />
-                  </div>
-                  {semesterOf.get(k.semester_id) && (
-                    <span className="mt-1 inline-block rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
-                      {semesterOf.get(k.semester_id) === "genap"
-                        ? "Genap"
-                        : "Ganjil"}
-                    </span>
-                  )}
-                  <div className="relative z-10 mt-3 flex flex-wrap gap-2 text-xs">
-                    <Link
-                      href={`/kelas/${k.id}/absensi`}
-                      className="rounded-full bg-emerald-50 px-3 py-1 font-medium text-emerald-700 hover:bg-emerald-100"
-                    >
-                      Absensi
-                    </Link>
-                    <Link
-                      href={`/kelas/${k.id}/tugas`}
-                      className="rounded-full bg-sky-50 px-3 py-1 font-medium text-sky-700 hover:bg-sky-100"
-                    >
-                      Tugas
-                    </Link>
-                    <Link
-                      href={`/kelas/${k.id}/rekap`}
-                      className="rounded-full bg-violet-50 px-3 py-1 font-medium text-violet-700 hover:bg-violet-100"
-                    >
-                      Rekap
-                    </Link>
-                  </div>
+            {kelasList.map((k) => (
+              <div
+                key={k.id}
+                className="relative rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200 border-t-4 border-t-emerald-500 transition hover:ring-emerald-300 hover:shadow-md"
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Stretched link: ::after menutupi seluruh kartu sehingga
+                      klik di mana pun membuka detail kelas. Elemen interaktif
+                      lain di dalam kartu perlu `relative z-10`. */}
+                  <Link
+                    href={`/kelas/${k.id}`}
+                    className="text-base font-semibold text-slate-900 after:absolute after:inset-0 after:rounded-xl hover:text-emerald-700"
+                  >
+                    {k.nama}
+                  </Link>
                 </div>
-              );
-            })}
+                {semesterOf.get(k.semester_id) && (
+                  <span className="mt-1 inline-block rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                    {semesterOf.get(k.semester_id) === "genap"
+                      ? "Genap"
+                      : "Ganjil"}
+                  </span>
+                )}
+                <div className="relative z-10 mt-3 flex flex-wrap gap-2 text-xs">
+                  <Link
+                    href={`/kelas/${k.id}/absensi`}
+                    className="rounded-full bg-emerald-50 px-3 py-1 font-medium text-emerald-700 hover:bg-emerald-100"
+                  >
+                    Absensi
+                  </Link>
+                  <Link
+                    href={`/kelas/${k.id}/tugas`}
+                    className="rounded-full bg-sky-50 px-3 py-1 font-medium text-sky-700 hover:bg-sky-100"
+                  >
+                    Tugas
+                  </Link>
+                  <Link
+                    href={`/kelas/${k.id}/rekap`}
+                    className="rounded-full bg-violet-50 px-3 py-1 font-medium text-violet-700 hover:bg-violet-100"
+                  >
+                    Rekap
+                  </Link>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

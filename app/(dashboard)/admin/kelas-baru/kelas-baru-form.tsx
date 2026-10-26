@@ -5,18 +5,16 @@ import { useRouter } from "next/navigation";
 import { adminBuatKelas } from "../actions";
 import { parseExcelPaste } from "@/lib/parse-excel-paste";
 import { formatTanggal } from "@/lib/periode";
-import { PALET_MAPEL, WARNA_MAPEL_LIST, warnaMapelSaran } from "@/lib/mapel";
-import type { Mapel, Semester, TahunPelajaran, WarnaMapel } from "@/lib/types";
+import type { Semester, TahunPelajaran } from "@/lib/types";
 
 const BARU = "__baru__";
 
 interface Props {
   tahunList: TahunPelajaran[];
   semList: Semester[];
-  mapelList: Mapel[];
 }
 
-export function KelasBaruForm({ tahunList, semList, mapelList }: Props) {
+export function KelasBaruForm({ tahunList, semList }: Props) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -36,18 +34,14 @@ export function KelasBaruForm({ tahunList, semList, mapelList }: Props) {
     "ganjil",
   );
 
-  const [mapelId, setMapelId] = useState("");
-  const [warnaBaru, setWarnaBaru] = useState<WarnaMapel>("emerald");
   const [namaKelas, setNamaKelas] = useState("");
   const [rawSiswa, setRawSiswa] = useState("");
 
-  // Kelas bersama memakai tahun aktif & mapel yang sudah ada — siapa pun
-  // pembuatnya. Bila belum ada tahun aktif, admin membuat tahun baru.
+  // Rombel memakai tahun aktif; bila belum ada, admin membuat tahun baru.
   const tahunTersedia = useMemo(
     () => tahunList.filter((t) => t.status === "aktif"),
     [tahunList],
   );
-  const mapelTersedia = mapelList;
 
   const semesterByTahun = useMemo(() => {
     const m = new Map<string, Semester[]>();
@@ -60,11 +54,6 @@ export function KelasBaruForm({ tahunList, semList, mapelList }: Props) {
   }, [semList]);
 
   const semesterTahun = tahunId ? (semesterByTahun.get(tahunId) ?? []) : [];
-
-  const saranWarna = useMemo(
-    () => warnaMapelSaran(mapelTersedia.map((m) => m.warna)),
-    [mapelTersedia],
-  );
 
   const parsed = useMemo(() => parseExcelPaste(rawSiswa), [rawSiswa]);
 
@@ -82,15 +71,6 @@ export function KelasBaruForm({ tahunList, semList, mapelList }: Props) {
       return;
     }
 
-    const mapelBaruNamaVal = String(fd.get("mapel_baru") ?? "").trim();
-    if (mapelId === BARU && !mapelBaruNamaVal) {
-      setError("Isi nama mata pelajaran baru");
-      return;
-    }
-    if (!mapelId) {
-      setError("Pilih atau buat mata pelajaran dulu");
-      return;
-    }
     if (parsed.length === 0) {
       setError("Masukkan minimal 1 nama santri");
       return;
@@ -101,16 +81,9 @@ export function KelasBaruForm({ tahunList, semList, mapelList }: Props) {
       tahun_baru?: typeof tahunBaru;
       semester_id?: string;
       semester_nama?: "ganjil" | "genap";
-      mapel_id?: string;
-      mapel_baru?: { nama: string; warna: WarnaMapel };
       nama: string;
       items: { nama: string; nis?: string }[];
     } = {
-      mapel_id: mapelId !== BARU ? mapelId : undefined,
-      mapel_baru:
-        mapelId === BARU
-          ? { nama: mapelBaruNamaVal, warna: warnaBaru }
-          : undefined,
       nama: String(fd.get("nama") ?? "").trim(),
       items: parsed.map(({ nama, nis }) => ({ nama, nis })),
     };
@@ -289,78 +262,17 @@ export function KelasBaruForm({ tahunList, semList, mapelList }: Props) {
         )}
       </div>
 
-      {/* ===== Mapel & nama kelas ===== */}
+      {/* ===== Nama kelas ===== */}
       <div className="card space-y-4">
         <h2 className="text-sm font-semibold text-slate-800">
-          Mata pelajaran & nama kelas
+          Nama kelas (rombel)
         </h2>
 
-        <label className="block">
-          <span className="mb-1 block text-xs font-medium text-slate-600">
-            Mata pelajaran (bersama)
-          </span>
-          <select
-            value={mapelId}
-            onChange={(e) => {
-              setMapelId(e.target.value);
-              if (e.target.value !== BARU) setWarnaBaru(saranWarna);
-            }}
-            required
-            className="input w-full sm:w-72"
-          >
-            <option value="" disabled>
-              {mapelTersedia.length === 0
-                ? "— belum ada mapel —"
-                : "— Pilih mapel (atau buat baru) —"}
-            </option>
-            {mapelTersedia.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.nama}
-              </option>
-            ))}
-            <option value={BARU}>+ Mata pelajaran baru…</option>
-          </select>
-        </label>
-
-        {mapelId === BARU && (
-          <div className="flex flex-wrap items-end gap-4">
-            <label className="block">
-              <span className="mb-1 block text-xs font-medium text-slate-600">
-                Nama mapel baru
-              </span>
-              <input
-                name="mapel_baru"
-                required
-                className="input w-full sm:w-56"
-                placeholder="mis. Matematika"
-              />
-            </label>
-            <div>
-              <span className="mb-1 block text-xs font-medium text-slate-600">
-                Warna tema
-              </span>
-              <div className="flex flex-wrap gap-1.5">
-                {WARNA_MAPEL_LIST.map((w) => {
-                  const t = PALET_MAPEL[w];
-                  return (
-                    <button
-                      key={w}
-                      type="button"
-                      title={t.label}
-                      aria-label={`Warna ${t.label}`}
-                      onClick={() => setWarnaBaru(w)}
-                      className={`h-8 w-8 rounded-full ${t.dot} ${
-                        warnaBaru === w
-                          ? "ring-2 ring-slate-800 ring-offset-2"
-                          : "opacity-70 hover:opacity-100"
-                      }`}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        )}
+        <p className="rounded-lg bg-sky-50 px-3 py-2 text-xs text-sky-800 ring-1 ring-sky-100">
+          Kelas dibuat sebagai rombel (belum ada mapel). Guru nanti mencentang
+          sendiri kelas ini beserta mapel yang ia ampu di menu{" "}
+          <b>Ambil Kelas</b>.
+        </p>
 
         <label className="block">
           <span className="mb-1 block text-xs font-medium text-slate-600">

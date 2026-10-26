@@ -1,9 +1,8 @@
 import { z } from "zod";
-import { mapelBaruSchema } from "./mapel";
 import { siswaItemSchema } from "./siswa";
 
 /**
- * Tahun pelajaran bersama baru yang dibuat admin (guru_id = NULL).
+ * Tahun pelajaran baru yang dibuat admin (guru_id = NULL).
  */
 export const tahunBaruSchema = z.object({
   nama: z.string().trim().min(1, "Nama tahun pelajaran wajib diisi").max(20),
@@ -13,30 +12,23 @@ export const tahunBaruSchema = z.object({
 });
 
 /**
- * Payload pembuatan kelas BERSAMA oleh admin (guru_id = NULL).
+ * Payload pembuatan rombel oleh admin (guru_id = NULL).
  *
- * Admin bisa:
- *   • memakai tahun pelajaran bersama yang sudah ada (tahun_pelajaran_id +
- *     semester_id), atau membuat tahun bersama baru sekaligus (tahun_baru —
- *     kedua semester dibuat otomatis oleh trigger);
- *   • memakai mapel bersama yang sudah ada (mapel_id), atau membuat mapel
- *     bersama baru sekaligus (mapel_baru).
- * Seluruh hasilnya menjadi milik bersama → bisa dipakai semua guru.
+ * Kelas kini murni rombel: tanpa mapel. Admin memilih tahun & semester
+ * yang sudah ada, atau membuat tahun baru sekaligus (kedua semester dibuat
+ * otomatis oleh trigger). Guru nanti mencentang kelas + mapel lewat
+ * halaman "Ambil Kelas".
  */
 export const adminKelasBaruSchema = z
   .object({
-    /** Pilih tahun bersama yang sudah ada. */
+    /** Pilih tahun yang sudah ada. */
     tahun_pelajaran_id: z.string().uuid().optional(),
-    /** Atau buat tahun bersama baru sekaligus. */
+    /** Atau buat tahun baru sekaligus. */
     tahun_baru: tahunBaruSchema.optional(),
     /** Semester untuk tahun yang sudah ada. */
     semester_id: z.string().uuid().optional(),
     /** Semester untuk tahun baru (otomatis dibuat oleh trigger). */
     semester_nama: z.enum(["ganjil", "genap"]).default("ganjil"),
-    /** Pilih mapel bersama yang sudah ada. */
-    mapel_id: z.string().uuid().optional(),
-    /** Atau buat mapel bersama baru sekaligus. */
-    mapel_baru: mapelBaruSchema.optional(),
     nama: z.string().trim().min(1, "Nama kelas wajib diisi").max(50),
     /** Daftar santri (nama, opsional nis). */
     items: z.array(siswaItemSchema).min(1, "Masukkan minimal 1 santri"),
@@ -48,10 +40,6 @@ export const adminKelasBaruSchema = z
   .refine((d) => !d.tahun_pelajaran_id || Boolean(d.semester_id), {
     message: "Pilih semester",
     path: ["semester_id"],
-  })
-  .refine((d) => Boolean(d.mapel_id) || Boolean(d.mapel_baru), {
-    message: "Pilih atau buat mata pelajaran dulu",
-    path: ["mapel_id"],
   });
 
 export type AdminKelasBaruInput = z.infer<typeof adminKelasBaruSchema>;

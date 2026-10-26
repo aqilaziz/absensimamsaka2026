@@ -25,6 +25,19 @@ export async function createTugas(
   if (!userId)
     return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
 
+  const { data: pengampu } = await supabase
+    .from("kelas_ajar")
+    .select("id")
+    .eq("kelas_id", kelasId)
+    .eq("guru_id", userId)
+    .limit(1);
+  if (!pengampu || pengampu.length === 0) {
+    return {
+      ok: false,
+      error: "Anda belum mengambil kelas ini. Buka menu Ambil Kelas dulu.",
+    };
+  }
+
   const { data, error } = await supabase
     .from("tugas")
     .insert({
@@ -117,7 +130,7 @@ export async function simpanPengumpulan(input: unknown): Promise<ActionResult> {
   const { data: tugasData } = await supabase
     .from("tugas")
     .select(
-      "*, kelas(*, tahun_pelajaran(*), mapel:mapel!kelas_mapel_id_fkey(*), semester:semester!kelas_semester_id_fkey(*))",
+      "*, kelas(*, tahun_pelajaran(*), semester:semester!kelas_semester_id_fkey(*))",
     )
     .eq("id", tugas_id)
     .maybeSingle();

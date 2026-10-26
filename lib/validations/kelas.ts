@@ -1,18 +1,21 @@
 import { z } from "zod";
-import { mapelBaruSchema } from "./mapel";
 
-export const kelasSchema = z
-  .object({
-    nama: z.string().trim().min(1, "Nama kelas wajib diisi").max(50),
-    semester_id: z.string().uuid("Semester belum dipilih"),
-    /** Pilih mata pelajaran yang sudah ada. */
-    mapel_id: z.string().uuid().optional(),
-    /** Atau buat mata pelajaran baru sekaligus. */
-    mapel_baru: mapelBaruSchema.optional(),
-  })
-  .refine((d) => Boolean(d.mapel_id) || Boolean(d.mapel_baru), {
-    message: "Pilih atau buat mata pelajaran dulu",
-    path: ["mapel_id"],
-  });
+/**
+ * Kelas = rombel. Mapel tidak lagi menempel di kelas; guru memilih mapel
+ * lewat halaman "Ambil Kelas" (tabel pengampu).
+ */
+export const kelasSchema = z.object({
+  nama: z.string().trim().min(1, "Nama kelas wajib diisi").max(50),
+  semester_id: z.string().uuid("Semester belum dipilih"),
+});
 
 export type KelasInput = z.infer<typeof kelasSchema>;
+
+/** Guru mengambil (mencentang) sebuah kelas untuk satu mapel. */
+export const ambilKelasSchema = z.object({
+  kelas_id: z.string().uuid("Kelas tidak dikenal"),
+  mapel_id: z.string().uuid("Pilih mata pelajaran dulu"),
+});
+
+export type AmbilKelasInput = z.infer<typeof ambilKelasSchema>;
+

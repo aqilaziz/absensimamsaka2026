@@ -3,17 +3,12 @@ import { createClient } from "@/lib/supabase/server";
 import { NavLink } from "@/components/nav-link";
 import { logout } from "./actions";
 import { labelSemester, semesterAktifHariIni } from "@/lib/periode";
-import { temaMapel } from "@/lib/mapel";
-import type {
-  Kelas,
-  Mapel,
-  Profile,
-  Semester,
-  TahunPelajaran,
-} from "@/lib/types";
+import { ambilKelasSaya, type KelasRingkas } from "@/lib/kelas";
+import type { Profile, Semester, TahunPelajaran } from "@/lib/types";
 import {
   Archive,
   CalendarRange,
+  CheckSquare,
   LayoutDashboard,
   LogOut,
   Search,
@@ -33,30 +28,32 @@ async function SidebarContent() {
   ]);
 
   const profil = profile as Profile | null;
+  const isAdmin = profil?.role === "admin";
   // Hanya ada satu tahun pelajaran aktif untuk seluruh madrasah.
   const aktif = (aktifList ?? []) as TahunPelajaran[];
   const tahun = aktif[0] ?? null;
 
-  let kelasList: (Kelas & { mapel?: Pick<Mapel, "nama" | "warna"> | null })[] =
-    [];
+  let kelasList: KelasRingkas[] = [];
   let semesters: Semester[] = [];
   if (tahun) {
-    const [resKelas, resSemester] = await Promise.all([
-      supabase
+    const { data: semData } = await supabase
+      .from("semester")
+      .select("*")
+      .eq("tahun_pelajaran_id", tahun.id)
+      .order("urutan");
+    semesters = (semData ?? []) as Semester[];
+
+    if (isAdmin) {
+      const { data } = await supabase
         .from("kelas")
-        .select("*, mapel:mapel!kelas_mapel_id_fkey(nama, warna)")
+        .select("id, nama, semester_id")
         .eq("tahun_pelajaran_id", tahun.id)
-        .order("nama"),
-      supabase
-        .from("semester")
-        .select("*")
-        .eq("tahun_pelajaran_id", tahun.id)
-        .order("urutan"),
-    ]);
-    kelasList = (resKelas.data ?? []) as (Kelas & {
-      mapel?: Pick<Mapel, "nama" | "warna"> | null;
-    })[];
-    semesters = (resSemester.data ?? []) as Semester[];
+        .order("nama");
+      kelasList = (data ?? []) as KelasRingkas[];
+    } else if (profil?.id) {
+      // Guru hanya melihat kelas yang ia centang di halaman "Ambil Kelas".
+      kelasList = await ambilKelasSaya(supabase, profil.id, tahun.id);
+    }
   }
 
   const semesterBerjalan = tahun
@@ -104,16 +101,25 @@ async function SidebarContent() {
             <LayoutDashboard size={16} /> Dashboard
           </span>
         </NavLink>
-        <NavLink href="/tahun-pelajaran">
-          <span className="flex items-center gap-2">
-            <CalendarRange size={16} /> Tahun Pelajaran
-          </span>
-        </NavLink>
+        {isAdmin && (
+          <NavLink href="/tahun-pelajaran">
+            <span className="flex items-center gap-2">
+              <CalendarRange size={16} /> Tahun Pelajaran
+            </span>
+          </NavLink>
+        )}
         <NavLink href="/kelas" exact>
           <span className="flex items-center gap-2">
             <Users size={16} /> Kelas
           </span>
         </NavLink>
+        {!isAdmin && (
+          <NavLink href="/ambil-kelas">
+            <span className="flex items-center gap-2">
+              <CheckSquare size={16} /> Ambil Kelas
+            </span>
+          </NavLink>
+        )}
         <NavLink href="/cari-santri">
           <span className="flex items-center gap-2">
             <Search size={16} /> Cari Santri
@@ -124,7 +130,7 @@ async function SidebarContent() {
             <Archive size={16} /> Arsip
           </span>
         </NavLink>
-        {profil?.role === "admin" && (
+        {isAdmin && (
           <NavLink href="/admin">
             <span className="flex items-center gap-2">
               <Shield size={16} /> Admin
@@ -151,9 +157,7 @@ async function SidebarContent() {
                     {items.map((k) => (
                       <NavLink key={k.id} href={`/kelas/${k.id}`}>
                         <span className="flex items-center gap-2 truncate">
-                          <span
-                            className={`h-2 w-2 shrink-0 rounded-full ${temaMapel(k.mapel?.warna).dot}`}
-                          />
+                          <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500/60" />
                           <span className="truncate">{k.nama}</span>
                         </span>
                       </NavLink>
@@ -167,9 +171,7 @@ async function SidebarContent() {
               {kelasList.map((k) => (
                 <NavLink key={k.id} href={`/kelas/${k.id}`}>
                   <span className="flex items-center gap-2 truncate">
-                    <span
-                      className={`h-2 w-2 shrink-0 rounded-full ${temaMapel(k.mapel?.warna).dot}`}
-                    />
+                    <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500/60" />
                     <span className="truncate">{k.nama}</span>
                   </span>
                 </NavLink>
@@ -207,11 +209,19 @@ function SidebarSkeleton() {
   );
 }
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Peran dibutuhkan topbar mobile (menu Ambil Kelas hanya untuk guru).
+  const supabase = await createClient();
+  const { data: profilRingkas } = await supabase
+    .from("profiles")
+    .select("role")
+    .single();
+  const isAdmin = (profilRingkas as { role?: string } | null)?.role === "admin";
+
   return (
     <div className="flex min-h-screen">
       {/* Sidebar desktop — dimuat terpisah agar children tidak menunggu. */}
@@ -244,6 +254,7 @@ export default function DashboardLayout({
             <NavLink href="/kelas" exact>
               Kelas
             </NavLink>
+            {!isAdmin && <NavLink href="/ambil-kelas">Ambil</NavLink>}
             <NavLink href="/cari-santri">Cari</NavLink>
             <NavLink href="/arsip">Arsip</NavLink>
           </nav>

@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
   let req = supabase
     .from("siswa")
     .select(
-      "*, kelas!inner(*, tahun_pelajaran!inner(*), mapel:mapel!kelas_mapel_id_fkey(nama, warna))",
+      "*, kelas!inner(*, tahun_pelajaran!inner(*))",
     )
     .or(`nama.ilike.${pola},nis.ilike.${pola}`)
     .order("nama")

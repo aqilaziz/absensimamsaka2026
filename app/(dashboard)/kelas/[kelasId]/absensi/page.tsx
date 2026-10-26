@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { addDays, format } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
+import { mapelSaya } from "@/lib/kelas";
 import { KelasHeader } from "@/components/kelas-header";
 import { AbsensiGrid } from "./absensi-grid";
 import { RiwayatAbsensi, type HariAbsensi } from "./riwayat-absensi";
@@ -44,7 +45,7 @@ export default async function AbsensiPage({
     supabase
       .from("kelas")
       .select(
-        "*, tahun_pelajaran(*), mapel:mapel!kelas_mapel_id_fkey(*), semester:semester!kelas_semester_id_fkey(*)",
+        "*, tahun_pelajaran(*), semester:semester!kelas_semester_id_fkey(*)",
       )
       .eq("id", kelasId)
       .maybeSingle(),
@@ -72,6 +73,7 @@ export default async function AbsensiPage({
 
   if (!kelasData) notFound();
   const kelas = kelasData as unknown as KelasDetail;
+  kelas.mapel = await mapelSaya(supabase, kelasId);
   const aktif = kelas.tahun_pelajaran.status === "aktif";
 
   const siswaList = (siswaData ?? []) as Siswa[];

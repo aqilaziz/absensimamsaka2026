@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { format } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
+import { mapelSaya } from "@/lib/kelas";
 import { KelasHeader } from "@/components/kelas-header";
 import { PengumpulanGrid, type PengumpulanRow } from "./pengumpulan-grid";
 import { EditTugasToggle } from "./edit-tugas-toggle";
@@ -20,7 +21,7 @@ export default async function TugasDetailPage({
     supabase
       .from("kelas")
       .select(
-        "*, tahun_pelajaran(*), mapel:mapel!kelas_mapel_id_fkey(*), semester:semester!kelas_semester_id_fkey(*)",
+        "*, tahun_pelajaran(*), semester:semester!kelas_semester_id_fkey(*)",
       )
       .eq("id", kelasId)
       .maybeSingle(),
@@ -29,6 +30,7 @@ export default async function TugasDetailPage({
 
   if (!kelasData || !tugasData) notFound();
   const kelas = kelasData as unknown as KelasDetail;
+  kelas.mapel = await mapelSaya(supabase, kelasId);
   const tugas = tugasData as Tugas;
   const aktif = kelas.tahun_pelajaran.status === "aktif";
 

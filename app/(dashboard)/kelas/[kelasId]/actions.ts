@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { cekAdmin } from "@/lib/admin";
 import {
   updateSiswaSchema,
   hapusBanyakSiswaSchema,
@@ -16,6 +17,9 @@ export async function updateSiswa(input: unknown): Promise<ActionResult> {
     return { ok: false, error: parsed.error.issues[0].message };
   }
   const supabase = await createClient();
+  if (!(await cekAdmin(supabase))) {
+    return { ok: false, error: "Hanya admin yang dapat mengubah daftar santri" };
+  }
 
   const { error } = await supabase
     .from("siswa")
@@ -39,6 +43,9 @@ export async function updateSiswa(input: unknown): Promise<ActionResult> {
 
 export async function hapusSiswa(siswaId: string): Promise<ActionResult> {
   const supabase = await createClient();
+  if (!(await cekAdmin(supabase))) {
+    return { ok: false, error: "Hanya admin yang dapat mengubah daftar santri" };
+  }
   const { error } = await supabase.from("siswa").delete().eq("id", siswaId);
   if (error) return { ok: false, error: error.message };
   revalidatePath("/kelas", "layout");
@@ -51,6 +58,9 @@ export async function hapusBanyakSiswa(input: unknown): Promise<ActionResult> {
     return { ok: false, error: parsed.error.issues[0].message };
   }
   const supabase = await createClient();
+  if (!(await cekAdmin(supabase))) {
+    return { ok: false, error: "Hanya admin yang dapat mengubah daftar santri" };
+  }
   const { error } = await supabase
     .from("siswa")
     .delete()
@@ -81,6 +91,9 @@ export async function salinSiswaDariKelas(
   }
 
   const supabase = await createClient();
+  if (!(await cekAdmin(supabase))) {
+    return { ok: false, error: "Hanya admin yang dapat mengubah daftar santri" };
+  }
   const {
     data: { user },
   } = await supabase.auth.getUser();

@@ -23,7 +23,7 @@ export default async function ArsipDetailPage({
       .maybeSingle(),
     supabase
       .from("kelas")
-      .select("*, mapel:mapel!kelas_mapel_id_fkey(nama, warna)")
+      .select("*")
       .eq("tahun_pelajaran_id", tahunId)
       .order("nama"),
   ]);

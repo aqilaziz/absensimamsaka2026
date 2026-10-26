@@ -7,77 +7,34 @@ import { mapelBaruSchema } from "@/lib/validations/mapel";
 import type { ActionResult, Semester, TahunPelajaran } from "@/lib/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+/**
+ * Semua aksi di file ini hanya untuk admin: kelas, mapel, dan tahun
+ * pelajaran adalah data master yang disiapkan admin. Guru hanya mencentang
+ * (lihat `ambil-kelas/actions.ts`).
+ */
 async function getContext() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  return { supabase, userId: user?.id ?? null };
+  if (!user) return { supabase, userId: null, isAdmin: false };
+
+  const { data: profil } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  return {
+    supabase,
+    userId: user.id,
+    isAdmin: (profil as { role?: string } | null)?.role === "admin",
+  };
 }
 
-/**
- * Tentukan id mapel untuk kelas: pakai yang sudah dipilih, pakai mapel yang
- * sudah ada dengan nama sama, atau buat baru.
- *
- * Daftar mapel bersifat bersama (seluruh madrasah memakai satu daftar), jadi
- * nama yang sama tidak dibuat dua kali — termasuk mapel buatan guru lain.
- */
-async function siapkanMapel(
-  supabase: SupabaseClient,
-  userId: string,
-  data: { mapel_id?: string; mapel_baru?: { nama: string; warna: string } },
-): Promise<{ mapelId?: string; error?: string }> {
-  if (data.mapel_id) {
-    const { data: mapel } = await supabase
-      .from("mapel")
-      .select("id")
-      .eq("id", data.mapel_id)
-      .maybeSingle();
-    if (!mapel) return { error: "Mata pelajaran tidak ditemukan" };
-    return { mapelId: (mapel as { id: string }).id };
-  }
+const HANYA_ADMIN = "Hanya admin yang dapat mengubah data ini";
 
-  if (data.mapel_baru) {
-    const nama = data.mapel_baru.nama.trim();
-
-    // Pakai mapel yang sudah ada dengan nama sama (tanpa membedakan huruf
-    // besar/kecil) supaya "Matematika" tidak muncul berganda.
-    const { data: semua } = await supabase.from("mapel").select("id, nama");
-    const daftar = (semua ?? []) as { id: string; nama: string }[];
-    const sama = daftar.find(
-      (m) => m.nama.trim().toLowerCase() === nama.toLowerCase(),
-    );
-    if (sama) return { mapelId: sama.id };
-
-    const { data: mapel, error } = await supabase
-      .from("mapel")
-      .insert({
-        guru_id: userId,
-        nama,
-        warna: data.mapel_baru.warna,
-      })
-      .select("id")
-      .single();
-    if (error) {
-      if (error.code === "23505") {
-        // Balapan dengan request lain → pakai baris yang sudah tersimpan.
-        const { data: ulang } = await supabase.from("mapel").select("id, nama");
-        const ada = ((ulang ?? []) as { id: string; nama: string }[]).find(
-          (m) => m.nama.trim().toLowerCase() === nama.toLowerCase(),
-        );
-        if (ada) return { mapelId: ada.id };
-        return { error: "Mata pelajaran sudah ada" };
-      }
-      return { error: error.message };
-    }
-    revalidatePath("/kelas", "layout");
-    return { mapelId: (mapel as { id: string }).id };
-  }
-
-  return { error: "Pilih atau buat mata pelajaran dulu" };
-}
-
-/** Pastikan semester dipilih ada, milik guru, dan berada di tahun aktif. */
+/** Pastikan semester ada dan berada di tahun yang masih aktif. */
 async function ambilSemesterValid(
   supabase: SupabaseClient,
   semesterId: string,
@@ -104,22 +61,18 @@ export async function createKelas(input: unknown): Promise<ActionResult> {
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0].message };
   }
-  const { supabase, userId } = await getContext();
-  if (!userId)
-    return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
+  const { supabase, userId, isAdmin } = await getContext();
+  if (!userId) return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
+  if (!isAdmin) return { ok: false, error: HANYA_ADMIN };
 
   const cek = await ambilSemesterValid(supabase, parsed.data.semester_id);
   if (cek.error) return { ok: false, error: cek.error };
   const semester = cek.semester!;
 
-  const mapel = await siapkanMapel(supabase, userId, parsed.data);
-  if (mapel.error) return { ok: false, error: mapel.error };
-
   const { error } = await supabase.from("kelas").insert({
     tahun_pelajaran_id: semester.tahun_pelajaran_id,
     semester_id: semester.id,
-    mapel_id: mapel.mapelId,
-    guru_id: userId,
+    guru_id: null,
     nama: parsed.data.nama,
   });
 
@@ -127,13 +80,13 @@ export async function createKelas(input: unknown): Promise<ActionResult> {
     if (error.code === "23505") {
       return {
         ok: false,
-        error:
-          "Kelas dengan nama & mata pelajaran ini sudah ada di semester tersebut",
+        error: "Kelas dengan nama ini sudah ada di semester tersebut",
       };
     }
     return { ok: false, error: error.message };
   }
   revalidatePath("/kelas", "layout");
+  revalidatePath("/ambil-kelas");
   return { ok: true };
 }
 
@@ -145,22 +98,18 @@ export async function updateKelas(
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0].message };
   }
-  const { supabase, userId } = await getContext();
-  if (!userId)
-    return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
+  const { supabase, userId, isAdmin } = await getContext();
+  if (!userId) return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
+  if (!isAdmin) return { ok: false, error: HANYA_ADMIN };
 
   const cek = await ambilSemesterValid(supabase, parsed.data.semester_id);
   if (cek.error) return { ok: false, error: cek.error };
-
-  const mapel = await siapkanMapel(supabase, userId, parsed.data);
-  if (mapel.error) return { ok: false, error: mapel.error };
 
   const { error } = await supabase
     .from("kelas")
     .update({
       nama: parsed.data.nama,
       semester_id: parsed.data.semester_id,
-      mapel_id: mapel.mapelId,
     })
     .eq("id", kelasId);
 
@@ -168,24 +117,52 @@ export async function updateKelas(
     if (error.code === "23505") {
       return {
         ok: false,
-        error:
-          "Kelas dengan nama & mata pelajaran ini sudah ada di semester tersebut",
+        error: "Kelas dengan nama ini sudah ada di semester tersebut",
       };
     }
     return { ok: false, error: error.message };
   }
   revalidatePath("/kelas", "layout");
+  revalidatePath("/ambil-kelas");
   return { ok: true };
 }
 
 export async function hapusKelas(kelasId: string): Promise<ActionResult> {
-  const { supabase, userId } = await getContext();
-  if (!userId)
-    return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
+  const { supabase, userId, isAdmin } = await getContext();
+  if (!userId) return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
+  if (!isAdmin) return { ok: false, error: HANYA_ADMIN };
 
   const { error } = await supabase.from("kelas").delete().eq("id", kelasId);
   if (error) return { ok: false, error: error.message };
   revalidatePath("/kelas", "layout");
+  revalidatePath("/ambil-kelas");
+  return { ok: true };
+}
+
+/** Tambah mata pelajaran (master admin). */
+export async function buatMapel(input: unknown): Promise<ActionResult> {
+  const parsed = mapelBaruSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0].message };
+  }
+  const { supabase, userId, isAdmin } = await getContext();
+  if (!userId) return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
+  if (!isAdmin) return { ok: false, error: HANYA_ADMIN };
+
+  const { error } = await supabase.from("mapel").insert({
+    guru_id: null,
+    nama: parsed.data.nama,
+    warna: parsed.data.warna,
+  });
+
+  if (error) {
+    if (error.code === "23505") {
+      return { ok: false, error: "Nama mata pelajaran sudah ada" };
+    }
+    return { ok: false, error: error.message };
+  }
+  revalidatePath("/kelas", "layout");
+  revalidatePath("/ambil-kelas");
   return { ok: true };
 }
 
@@ -198,9 +175,9 @@ export async function updateMapel(
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0].message };
   }
-  const { supabase, userId } = await getContext();
-  if (!userId)
-    return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
+  const { supabase, userId, isAdmin } = await getContext();
+  if (!userId) return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
+  if (!isAdmin) return { ok: false, error: HANYA_ADMIN };
 
   const { error } = await supabase
     .from("mapel")
@@ -214,17 +191,19 @@ export async function updateMapel(
     return { ok: false, error: error.message };
   }
   revalidatePath("/kelas", "layout");
+  revalidatePath("/ambil-kelas");
   return { ok: true };
 }
 
-/** Hapus mapel. Kelas yang memakainya menjadi tanpa mapel (ON DELETE SET NULL). */
+/** Hapus mapel. Pengampu yang memakainya ikut terhapus (cascade). */
 export async function hapusMapel(mapelId: string): Promise<ActionResult> {
-  const { supabase, userId } = await getContext();
-  if (!userId)
-    return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
+  const { supabase, userId, isAdmin } = await getContext();
+  if (!userId) return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
+  if (!isAdmin) return { ok: false, error: HANYA_ADMIN };
 
   const { error } = await supabase.from("mapel").delete().eq("id", mapelId);
   if (error) return { ok: false, error: error.message };
   revalidatePath("/kelas", "layout");
+  revalidatePath("/ambil-kelas");
   return { ok: true };
 }

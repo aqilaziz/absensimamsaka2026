@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { KelasHeader } from "@/components/kelas-header";
 import { SiswaTable } from "./siswa-table";
 import { SalinSantriButton } from "./salin-santri-button";
 import { cariSemesterSumber } from "@/lib/santri";
-import type { KelasDetail, Siswa } from "@/lib/types";
+import { ambilKelasDetail, ambilPengampu } from "@/lib/kelas";
+import type { KelasAjar, KelasDetail, Mapel, Profile, Siswa } from "@/lib/types";
 
 export default async function KelasDetailPage({
   params,
@@ -15,30 +16,46 @@ export default async function KelasDetailPage({
   const { kelasId } = await params;
   const supabase = await createClient();
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, role")
+    .single();
+  const profil = profile as Pick<Profile, "id" | "role"> | null;
+  const isAdmin = profil?.role === "admin";
+
   const [{ data: kelasData }, { data: siswaData }] = await Promise.all([
-    supabase
-      .from("kelas")
-      .select(
-        "*, tahun_pelajaran(*), mapel:mapel!kelas_mapel_id_fkey(*), semester:semester!kelas_semester_id_fkey(*)",
-      )
-      .eq("id", kelasId)
-      .maybeSingle(),
+    ambilKelasDetail(supabase, kelasId),
     supabase.from("siswa").select("*").eq("kelas_id", kelasId).order("urutan"),
   ]);
 
   if (!kelasData) notFound();
   const kelas = kelasData as unknown as KelasDetail;
+
+  // Mapel yang diampu guru ini di kelas tersebut.
+  const { data: pengampuData } = profil?.id
+    ? await ambilPengampu(supabase, kelasId, profil.id)
+    : { data: null };
+
+  const pengampuSaya = (pengampuData ?? []) as (KelasAjar & {
+    mapel?: Mapel | null;
+  })[];
+
+  // Guru yang belum mengambil kelas ini tidak boleh melihat daftar santrinya.
+  if (!isAdmin && pengampuSaya.length === 0) redirect("/ambil-kelas");
+
+  kelas.mapel = pengampuSaya[0]?.mapel ?? null;
+  kelas.pengampu = pengampuSaya;
+
   const aktif = kelas.tahun_pelajaran.status === "aktif";
-  // Daftar santri adalah data bersama: guru mana pun boleh menambah,
-  // memperbaiki, atau menghapus santri — termasuk pada kelas buatan admin.
-  const dapatKelola = aktif;
+  // Hanya admin yang mengelola daftar santri; guru melihat daftar saja.
+  const dapatKelola = aktif && isAdmin;
 
   const siswaList = (siswaData ?? []) as Siswa[];
 
   // Semester ganjil biasanya memakai daftar santri yang sama dengan semester
   // genap sebelumnya. Jika kelas ini masih kosong, tawarkan salin satu klik.
   const sumber =
-    aktif && kelas.semester?.nama === "ganjil" && siswaList.length === 0
+    dapatKelola && kelas.semester?.nama === "ganjil" && siswaList.length === 0
       ? await cariSemesterSumber(supabase, kelas)
       : null;
 
@@ -66,7 +83,7 @@ export default async function KelasDetailPage({
       {siswaList.length === 0 ? (
         <p className="card text-sm text-slate-500">
           Belum ada santri.{" "}
-          {dapatKelola && (
+          {dapatKelola ? (
             <>
               <Link
                 href={`/kelas/${kelasId}/siswa/import`}
@@ -85,6 +102,8 @@ export default async function KelasDetailPage({
                 </>
               )}
             </>
+          ) : (
+            "Daftar santri diisi oleh admin madrasah."
           )}
         </p>
       ) : (

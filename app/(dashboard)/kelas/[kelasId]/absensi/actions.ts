@@ -19,10 +19,24 @@ export async function simpanAbsensi(input: unknown): Promise<ActionResult> {
 
   const { kelas_id, tanggal, items } = parsed.data;
 
+  // Guru hanya boleh mengabsen kelas yang sudah ia ambil (menu Ambil Kelas).
+  const { data: pengampu } = await supabase
+    .from("kelas_ajar")
+    .select("id")
+    .eq("kelas_id", kelas_id)
+    .eq("guru_id", user.id)
+    .limit(1);
+  if (!pengampu || pengampu.length === 0) {
+    return {
+      ok: false,
+      error: "Anda belum mengambil kelas ini. Buka menu Ambil Kelas dulu.",
+    };
+  }
+
   const { data: kelasData } = await supabase
     .from("kelas")
     .select(
-      "*, tahun_pelajaran(*), mapel:mapel!kelas_mapel_id_fkey(*), semester:semester!kelas_semester_id_fkey(*)",
+      "*, tahun_pelajaran(*), semester:semester!kelas_semester_id_fkey(*)",
     )
     .eq("id", kelas_id)
     .maybeSingle();
@@ -59,7 +73,7 @@ export async function simpanAbsensi(input: unknown): Promise<ActionResult> {
 
   const { error } = await supabase
     .from("absensi")
-    .upsert(rows, { onConflict: "siswa_id,tanggal" });
+    .upsert(rows, { onConflict: "siswa_id,tanggal,guru_id" });
 
   if (error) return { ok: false, error: error.message };
 
