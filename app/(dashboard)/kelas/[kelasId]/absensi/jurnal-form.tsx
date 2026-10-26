@@ -27,7 +27,9 @@ export function JurnalForm({
   aktif: boolean;
 }) {
   const sudahAda = Boolean(existing);
-  const [buka, setBuka] = useState(sudahAda);
+  // Form sesi selalu terbuka: judul & jam pelajaran adalah bagian dari
+  // sesi absensi, bukan catatan opsional.
+  const [buka, setBuka] = useState(true);
   const [pesan, setPesan] = useState<{ ok: boolean; teks: string } | null>(
     null,
   );
@@ -94,7 +96,7 @@ export function JurnalForm({
       >
         <span className="flex items-center gap-2 text-sm font-semibold text-slate-700">
           <BookOpen size={16} className="text-emerald-600" />
-          Jurnal Sesi
+          Sesi &amp; Jurnal
           <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-normal text-slate-500">
             {sudahAda ? "sudah diisi" : "opsional"}
           </span>
@@ -111,26 +113,19 @@ export function JurnalForm({
           onSubmit={onSubmit}
           className="space-y-4 border-t border-slate-100 px-4 py-4"
         >
-          {/* ===== Judul + tanggal ===== */}
-          <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
-            <label className="block">
-              <span className="mb-1 block text-xs font-medium text-slate-600">
-                Judul pertemuan
-              </span>
-              <input
-                name="judul"
-                disabled={!aktif}
-                defaultValue={existing?.judul ?? judulOtomatis(tanggal)}
-                className="input"
-                placeholder="mis. Pertemuan Senin, 26/10/2026"
-              />
-            </label>
-            <div className="pb-2 text-xs text-slate-500">
-              {format(new Date(tanggal + "T00:00:00"), "EEEE, d MMMM yyyy", {
-                locale: localeId,
-              })}
-            </div>
-          </div>
+          {/* ===== Judul sesi (tanggal mengikuti tanggal absensi) ===== */}
+          <label className="block">
+            <span className="mb-1 block text-xs font-medium text-slate-600">
+              Judul pertemuan
+            </span>
+            <input
+              name="judul"
+              disabled={!aktif}
+              defaultValue={existing?.judul ?? judulOtomatis(tanggal)}
+              className="input"
+              placeholder="mis. Pertemuan Senin, 26/10/2026"
+            />
+          </label>
 
           {/* ===== Jam pelajaran ===== */}
           <div>

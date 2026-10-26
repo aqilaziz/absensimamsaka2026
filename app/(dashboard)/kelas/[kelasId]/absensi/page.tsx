@@ -155,6 +155,15 @@ export default async function AbsensiPage({
         </p>
       )}
 
+      {/* Sesi (judul + jam pelajaran) dan catatan jurnal diletakkan di atas
+          daftar santri; tanggalnya mengikuti tanggal absensi yang dipilih. */}
+      <JurnalForm
+        kelasId={kelasId}
+        tanggal={tanggal}
+        existing={(jurnalData as Jurnal | null) ?? null}
+        aktif={aktif}
+      />
+
       {siswaList.length === 0 ? (
         <p className="card text-sm text-slate-500">
           Belum ada santri di kelas ini.{" "}
@@ -176,13 +185,6 @@ export default async function AbsensiPage({
           aktif={aktif}
         />
       )}
-
-      <JurnalForm
-        kelasId={kelasId}
-        tanggal={tanggal}
-        existing={(jurnalData as Jurnal | null) ?? null}
-        aktif={aktif}
-      />
 
       <RiwayatAbsensi
         kelasId={kelasId}
