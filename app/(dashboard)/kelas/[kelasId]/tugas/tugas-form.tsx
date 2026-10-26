@@ -1,11 +1,22 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createTugas, updateTugas, hapusTugas } from "./actions";
-import type { Tugas } from "@/lib/types";
-import { konfirmasiHapus, toastGagal, toastSukses } from "@/lib/swal";
 import { format } from "date-fns";
+import { Paperclip, Upload, X } from "lucide-react";
+import { createTugas, updateTugas, hapusTugas } from "./actions";
+import { createClient } from "@/lib/supabase/client";
+import type { Lampiran, Tugas } from "@/lib/types";
+import { konfirmasiHapus, toastGagal, toastSukses } from "@/lib/swal";
+
+const MAKS_BERKAS = 10;
+const MAKS_UKURAN = 10 * 1024 * 1024; // 10 MB
+
+function ukuranTeks(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 export function TugasForm({
   kelasId,
@@ -19,10 +30,63 @@ export function TugasForm({
   const [tipe, setTipe] = useState<"ceklis" | "nilai">(tugas?.tipe ?? "ceklis");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [lampiran, setLampiran] = useState<Lampiran[]>(tugas?.lampiran ?? []);
+  const [mengunggah, setMengunggah] = useState(false);
+  const [seret, setSeret] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+
+  async function unggahBerkas(daftar: File[]) {
+    if (daftar.length === 0) return;
+    if (lampiran.length + daftar.length > MAKS_BERKAS) {
+      setError(`Maksimal ${MAKS_BERKAS} berkas per tugas.`);
+      return;
+    }
+
+    setError(null);
+    setMengunggah(true);
+    const supabase = createClient();
+    const berhasil: Lampiran[] = [];
+
+    for (const f of daftar) {
+      if (f.size > MAKS_UKURAN) {
+        setError(`"${f.name}" lebih dari 10 MB, dilewati.`);
+        continue;
+      }
+      const aman = f.name.replace(/[^\w.\-]+/g, "_");
+      const path = `${kelasId}/${crypto.randomUUID()}-${aman}`;
+      const { error: err } = await supabase.storage
+        .from("tugas")
+        .upload(path, f, { upsert: false, contentType: f.type || undefined });
+      if (err) {
+        setError(`Gagal mengunggah "${f.name}": ${err.message}`);
+        continue;
+      }
+      berhasil.push({
+        nama: f.name,
+        path,
+        ukuran: f.size,
+        tipe: f.type || "application/octet-stream",
+      });
+    }
+
+    setLampiran((prev) => [...prev, ...berhasil]);
+    setMengunggah(false);
+    if (berhasil.length > 0) toastSukses(`${berhasil.length} berkas diunggah`);
+  }
+
+  async function buangLampiran(l: Lampiran) {
+    setLampiran((prev) => prev.filter((x) => x.path !== l.path));
+    const supabase = createClient();
+    await supabase.storage.from("tugas").remove([l.path]);
+  }
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (mengunggah) {
+      setError("Tunggu unggahan berkas selesai.");
+      return;
+    }
     const fd = new FormData(e.currentTarget);
     const input = {
       judul: String(fd.get("judul")),
@@ -34,6 +98,7 @@ export function TugasForm({
           : undefined,
       tgl_diberikan: String(fd.get("tgl_diberikan")),
       tgl_tenggat: String(fd.get("tgl_tenggat") ?? "") || undefined,
+      lampiran,
     };
     setError(null);
     startTransition(async () => {
@@ -95,13 +160,14 @@ export function TugasForm({
         </label>
         <label className="block sm:col-span-2">
           <span className="mb-1 block text-xs font-medium text-slate-600">
-            Deskripsi (opsional)
+            Deskripsi / instruksi (bebas, tanpa batas karakter)
           </span>
           <textarea
             name="deskripsi"
-            rows={2}
+            rows={5}
             defaultValue={tugas?.deskripsi ?? ""}
-            className="input"
+            className="input resize-y"
+            placeholder="Tulis instruksi lengkap, boleh sepanjang yang diperlukan…"
           />
         </label>
 
@@ -179,6 +245,77 @@ export function TugasForm({
         </label>
       </div>
 
+      {/* ===== Lampiran berkas ===== */}
+      <div>
+        <span className="mb-1 block text-xs font-medium text-slate-600">
+          Lampiran berkas (opsional)
+        </span>
+        <div
+          onClick={() => inputRef.current?.click()}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setSeret(true);
+          }}
+          onDragLeave={() => setSeret(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setSeret(false);
+            void unggahBerkas(Array.from(e.dataTransfer.files));
+          }}
+          className={`flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed px-4 py-5 text-center transition ${
+            seret
+              ? "border-emerald-500 bg-emerald-50"
+              : "border-slate-300 bg-slate-50 hover:border-emerald-400 hover:bg-emerald-50/40"
+          }`}
+        >
+          <Upload size={20} className="text-emerald-600" />
+          <p className="text-sm font-medium text-slate-700">
+            {mengunggah ? "Mengunggah…" : "Tarik berkas ke sini atau klik"}
+          </p>
+          <p className="text-[11px] text-slate-400">
+            PDF, Word, Excel, gambar — maks. 10 MB per berkas, hingga{" "}
+            {MAKS_BERKAS} berkas
+          </p>
+          <input
+            ref={inputRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              void unggahBerkas(Array.from(e.target.files ?? []));
+              e.target.value = "";
+            }}
+          />
+        </div>
+
+        {lampiran.length > 0 && (
+          <ul className="mt-2 space-y-1.5">
+            {lampiran.map((l) => (
+              <li
+                key={l.path}
+                className="flex items-center gap-2 rounded-lg bg-white px-3 py-1.5 text-sm ring-1 ring-slate-200"
+              >
+                <Paperclip size={14} className="shrink-0 text-slate-400" />
+                <span className="min-w-0 flex-1 truncate text-slate-700">
+                  {l.nama}
+                </span>
+                <span className="shrink-0 text-[11px] text-slate-400">
+                  {ukuranTeks(l.ukuran)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => void buangLampiran(l)}
+                  title="Hapus berkas"
+                  className="shrink-0 rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                >
+                  <X size={14} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
       {error && (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
           {error}
@@ -186,7 +323,11 @@ export function TugasForm({
       )}
 
       <div className="flex flex-wrap gap-2">
-        <button type="submit" disabled={pending} className="btn-primary">
+        <button
+          type="submit"
+          disabled={pending || mengunggah}
+          className="btn-primary"
+        >
           {pending ? "Menyimpan…" : tugas ? "Simpan Perubahan" : "Simpan Tugas"}
         </button>
         {onClose && (

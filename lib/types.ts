@@ -147,6 +147,14 @@ export interface Jurnal {
   updated_at: string;
 }
 
+/** Lampiran berkas tugas (disimpan di bucket Storage `tugas`). */
+export interface Lampiran {
+  nama: string;
+  path: string;
+  ukuran: number;
+  tipe: string;
+}
+
 export interface Tugas {
   id: string;
   kelas_id: string;
@@ -157,6 +165,7 @@ export interface Tugas {
   nilai_maks: number | null;
   tgl_diberikan: string;
   tgl_tenggat: string | null;
+  lampiran: Lampiran[] | null;
   created_at: string;
 }
 

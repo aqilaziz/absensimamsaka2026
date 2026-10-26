@@ -49,6 +49,7 @@ export async function createTugas(
       nilai_maks: parsed.data.tipe === "nilai" ? parsed.data.nilai_maks! : null,
       tgl_diberikan: parsed.data.tgl_diberikan,
       tgl_tenggat: parsed.data.tgl_tenggat || null,
+      lampiran: parsed.data.lampiran ?? [],
     })
     .select("id")
     .single();
@@ -83,6 +84,7 @@ export async function updateTugas(
       nilai_maks: ubahKeCeklis ? null : parsed.data.nilai_maks!,
       tgl_diberikan: parsed.data.tgl_diberikan,
       tgl_tenggat: parsed.data.tgl_tenggat || null,
+      lampiran: parsed.data.lampiran ?? [],
     })
     .eq("id", tugasId);
 

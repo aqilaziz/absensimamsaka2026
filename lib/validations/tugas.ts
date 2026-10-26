@@ -1,13 +1,24 @@
 import { z } from "zod";
 
+/** Berkas lampiran yang sudah diunggah ke Storage. */
+export const lampiranSchema = z.object({
+  nama: z.string().trim().min(1).max(200),
+  path: z.string().trim().min(1).max(500),
+  ukuran: z.coerce.number().int().nonnegative(),
+  tipe: z.string().trim().max(150),
+});
+
 export const tugasSchema = z
   .object({
     judul: z.string().trim().min(1, "Judul wajib diisi").max(150),
-    deskripsi: z.string().trim().max(1000).optional(),
+    // Deskripsi bebas — tanpa batas karakter.
+    deskripsi: z.string().trim().optional(),
     tipe: z.enum(["ceklis", "nilai"]),
     nilai_maks: z.coerce.number().positive().max(1000).optional(),
     tgl_diberikan: z.string().date(),
     tgl_tenggat: z.string().date().optional(),
+    /** Maksimal 10 berkas per tugas. */
+    lampiran: z.array(lampiranSchema).max(10).optional(),
   })
   .refine((d) => d.tipe === "ceklis" || d.nilai_maks !== undefined, {
     message: "Nilai maksimal wajib untuk tipe nilai",

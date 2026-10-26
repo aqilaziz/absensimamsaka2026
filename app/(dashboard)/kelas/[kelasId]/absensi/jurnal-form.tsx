@@ -37,6 +37,8 @@ export function JurnalForm({
   // Form sesi selalu terbuka: judul & jam pelajaran adalah bagian dari
   // sesi absensi, bukan catatan opsional.
   const [buka, setBuka] = useState(true);
+  // Bagian catatan jurnal default tersembunyi; dibuka hanya bila ingin diisi.
+  const [bukaJurnal, setBukaJurnal] = useState(adaCatatan);
   const [pesan, setPesan] = useState<{ ok: boolean; teks: string } | null>(
     null,
   );
@@ -169,15 +171,31 @@ export function JurnalForm({
             </div>
           </div>
 
-          {/* ===== Jurnal guru (opsional) ===== */}
-          <div className="space-y-3 rounded-lg bg-slate-50 p-3 ring-1 ring-slate-200">
-            <p className="flex items-center gap-2 text-xs font-semibold text-slate-700">
-              <BookOpen size={14} className="text-slate-400" />
-              Jurnal guru
-              <span className="font-normal text-slate-400">(opsional)</span>
-            </p>
+          {/* ===== Jurnal guru (opsional, default tersembunyi) ===== */}
+          <div className="rounded-lg bg-slate-50 ring-1 ring-slate-200">
+            <button
+              type="button"
+              onClick={() => setBukaJurnal((v) => !v)}
+              aria-expanded={bukaJurnal}
+              className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left"
+            >
+              <span className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                <BookOpen size={14} className="text-slate-400" />
+                Jurnal guru
+                <span className="font-normal text-slate-400">(opsional)</span>
+              </span>
+              <span className="flex items-center gap-1 text-[11px] font-medium text-emerald-700">
+                {bukaJurnal ? "Sembunyikan" : "Tampilkan"}
+                <ChevronDown
+                  size={14}
+                  className={`transition-transform ${bukaJurnal ? "rotate-180" : ""}`}
+                />
+              </span>
+            </button>
 
-            <label className="block">
+            {bukaJurnal && (
+              <div className="space-y-3 border-t border-slate-200 p-3">
+                <label className="block">
               <span className="mb-1 block text-xs font-medium text-slate-600">
                 Topik pembelajaran
               </span>
@@ -230,6 +248,8 @@ export function JurnalForm({
                 />
               </label>
             </div>
+              </div>
+            )}
           </div>
 
           {aktif && (

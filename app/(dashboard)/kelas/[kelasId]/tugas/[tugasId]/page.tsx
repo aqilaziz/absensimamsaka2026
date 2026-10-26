@@ -7,7 +7,14 @@ import { KelasHeader } from "@/components/kelas-header";
 import { PengumpulanGrid, type PengumpulanRow } from "./pengumpulan-grid";
 import { EditTugasToggle } from "./edit-tugas-toggle";
 import { formatTanggal } from "@/lib/periode";
-import type { KelasDetail, Tugas } from "@/lib/types";
+import { Paperclip } from "lucide-react";
+import type { KelasDetail, Lampiran, Tugas } from "@/lib/types";
+
+function ukuranTeks(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 export default async function TugasDetailPage({
   params,
@@ -32,6 +39,17 @@ export default async function TugasDetailPage({
   const kelas = kelasData as unknown as KelasDetail;
   kelas.mapel = await mapelSaya(supabase, kelasId);
   const tugas = tugasData as Tugas;
+
+  // Lampiran disimpan di bucket privat → buat tautan bertanda tangan (1 jam).
+  const lampiran = (tugas.lampiran ?? []) as Lampiran[];
+  const lampiranUrl = await Promise.all(
+    lampiran.map(async (l) => {
+      const { data } = await supabase.storage
+        .from("tugas")
+        .createSignedUrl(l.path, 60 * 60);
+      return { ...l, url: data?.signedUrl ?? null };
+    }),
+  );
   const aktif = kelas.tahun_pelajaran.status === "aktif";
 
   const { data: pengumpulanData } = await supabase
@@ -82,9 +100,35 @@ export default async function TugasDetailPage({
             )}
           </div>
           {tugas.deskripsi && (
-            <p className="mt-2 max-w-2xl text-sm text-slate-600">
+            <p className="mt-2 max-w-2xl whitespace-pre-line text-sm text-slate-600">
               {tugas.deskripsi}
             </p>
+          )}
+
+          {lampiranUrl.length > 0 && (
+            <div className="mt-3">
+              <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                Lampiran
+              </p>
+              <ul className="flex flex-wrap gap-2">
+                {lampiranUrl.map((l) => (
+                  <li key={l.path}>
+                    <a
+                      href={l.url ?? "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex max-w-full items-center gap-1.5 rounded-lg bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 ring-1 ring-slate-200 transition hover:bg-emerald-50 hover:text-emerald-700 hover:ring-emerald-200"
+                    >
+                      <Paperclip size={13} className="shrink-0" />
+                      <span className="truncate">{l.nama}</span>
+                      <span className="shrink-0 text-[10px] font-normal text-slate-400">
+                        {ukuranTeks(l.ukuran)}
+                      </span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </div>
         {aktif && <EditTugasToggle kelasId={kelasId} tugas={tugas} />}
