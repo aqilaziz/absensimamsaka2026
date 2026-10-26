@@ -13,10 +13,10 @@ export function KelasHeader({
   active: TabKey;
 }) {
   const tabs: { key: TabKey; label: string; href: string }[] = [
-    { key: "santri", label: "Santri", href: `/kelas/${kelas.id}` },
     { key: "absensi", label: "Absensi", href: `/kelas/${kelas.id}/absensi` },
     { key: "tugas", label: "Tugas", href: `/kelas/${kelas.id}/tugas` },
     { key: "rekap", label: "Rekap", href: `/kelas/${kelas.id}/rekap` },
+    { key: "santri", label: "Santri", href: `/kelas/${kelas.id}` },
   ];
 
   return (
