@@ -354,8 +354,10 @@ function SiswaCard({
           />
         )}
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] leading-none text-slate-400">{no}</p>
-          <p className="mt-1 text-sm font-medium leading-snug">
+          <p className="flex items-baseline gap-1.5 text-sm font-medium leading-snug">
+            <span className="shrink-0 text-[11px] font-normal text-slate-400">
+              {no}
+            </span>
             <NamaSantriLink id={siswa.id} nama={siswa.nama} />
           </p>
           <p className="text-xs text-slate-500">NIS: {siswa.nis ?? "—"}</p>
