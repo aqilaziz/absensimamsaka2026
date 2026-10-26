@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { adminBuatKelas } from "../actions";
+import { InputTanggal } from "@/components/input-tanggal";
 import { parseExcelPaste } from "@/lib/parse-excel-paste";
 import { formatTanggal } from "@/lib/periode";
 import type { Semester, TahunPelajaran } from "@/lib/types";
@@ -184,54 +185,44 @@ export function KelasBaruForm({ tahunList, semList }: Props) {
                   <option value="genap">Genap</option>
                 </select>
               </label>
-              <label className="block">
+              <div className="block">
                 <span className="mb-1 block text-xs font-medium text-slate-600">
                   Tanggal mulai
                 </span>
-                <input
-                  type="date"
-                  required
-                  className="input w-full"
+                <InputTanggal
                   value={tahunBaru.tgl_mulai}
-                  onChange={(e) =>
-                    setTahunBaru((v) => ({ ...v, tgl_mulai: e.target.value }))
+                  onChange={(v) =>
+                    setTahunBaru((s) => ({ ...s, tgl_mulai: v }))
                   }
+                  required
                 />
-              </label>
-              <label className="block">
+              </div>
+              <div className="block">
                 <span className="mb-1 block text-xs font-medium text-slate-600">
                   Batas semester ganjil
                 </span>
-                <input
-                  type="date"
-                  required
-                  className="input w-full"
+                <InputTanggal
                   value={tahunBaru.batas_semester}
-                  onChange={(e) =>
-                    setTahunBaru((v) => ({
-                      ...v,
-                      batas_semester: e.target.value,
-                    }))
+                  onChange={(v) =>
+                    setTahunBaru((s) => ({ ...s, batas_semester: v }))
                   }
+                  min={tahunBaru.tgl_mulai}
+                  required
                 />
-              </label>
-              <label className="block sm:col-span-2">
+              </div>
+              <div className="block sm:col-span-2">
                 <span className="mb-1 block text-xs font-medium text-slate-600">
                   Tanggal selesai
                 </span>
-                <input
-                  type="date"
-                  required
-                  className="input w-full"
+                <InputTanggal
                   value={tahunBaru.tgl_selesai}
-                  onChange={(e) =>
-                    setTahunBaru((v) => ({
-                      ...v,
-                      tgl_selesai: e.target.value,
-                    }))
+                  onChange={(v) =>
+                    setTahunBaru((s) => ({ ...s, tgl_selesai: v }))
                   }
+                  min={tahunBaru.batas_semester}
+                  required
                 />
-              </label>
+              </div>
             </div>
           </div>
         ) : (

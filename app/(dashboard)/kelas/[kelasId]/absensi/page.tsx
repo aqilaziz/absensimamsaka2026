@@ -7,7 +7,7 @@ import { KelasHeader } from "@/components/kelas-header";
 import { AbsensiGrid } from "./absensi-grid";
 import { RiwayatAbsensi, type HariAbsensi } from "./riwayat-absensi";
 import { JurnalForm } from "./jurnal-form";
-import { formatTanggalPanjang } from "@/lib/periode";
+import { InputTanggal } from "@/components/input-tanggal";
 import type {
   Absensi,
   Jurnal,
@@ -120,15 +120,15 @@ export default async function AbsensiPage({
             <ChevronLeft size={16} />
           </Link>
           <form className="flex flex-wrap items-center gap-2">
-            <input
-              type="date"
+            <InputTanggal
               name="tanggal"
+              required
               defaultValue={tanggal}
               min={kelas.semester?.tgl_mulai ?? kelas.tahun_pelajaran.tgl_mulai}
               max={
                 kelas.semester?.tgl_selesai ?? kelas.tahun_pelajaran.tgl_selesai
               }
-              className="input w-auto max-w-full py-1.5"
+              className="w-[17.5rem] max-w-full"
             />
             <button type="submit" className="btn-secondary shrink-0 py-1.5">
               Buka
@@ -142,9 +142,6 @@ export default async function AbsensiPage({
             <ChevronRight size={16} />
           </Link>
         </div>
-        <p className="text-xs font-medium text-slate-600 sm:text-sm">
-          {formatTanggalPanjang(tanggal)}
-        </p>
       </div>
 
       {tanggal !== format(new Date(), "yyyy-MM-dd") && (

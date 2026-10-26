@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { Paperclip, Upload, X } from "lucide-react";
 import { createTugas, updateTugas, hapusTugas } from "./actions";
+import { InputTanggal } from "@/components/input-tanggal";
 import { createClient } from "@/lib/supabase/client";
 import type { Lampiran, Tugas } from "@/lib/types";
 import { konfirmasiHapus, toastGagal, toastSukses } from "@/lib/swal";
@@ -218,31 +219,28 @@ export function TugasForm({
           </label>
         )}
 
-        <label className="block">
+        <div className="block">
           <span className="mb-1 block text-xs font-medium text-slate-600">
             Tanggal diberikan
           </span>
-          <input
+          <InputTanggal
             name="tgl_diberikan"
-            type="date"
             required
             defaultValue={
               tugas?.tgl_diberikan ?? format(new Date(), "yyyy-MM-dd")
             }
-            className="input"
           />
-        </label>
-        <label className="block">
+        </div>
+        <div className="block">
           <span className="mb-1 block text-xs font-medium text-slate-600">
             Tenggat (opsional)
           </span>
-          <input
+          <InputTanggal
             name="tgl_tenggat"
-            type="date"
             defaultValue={tugas?.tgl_tenggat ?? ""}
-            className="input"
+            placeholder="Tanpa tenggat"
           />
-        </label>
+        </div>
       </div>
 
       {/* ===== Lampiran berkas ===== */}
