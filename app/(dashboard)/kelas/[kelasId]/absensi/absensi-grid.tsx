@@ -2,8 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { simpanAbsensi } from "./actions";
+import { simpanAbsensi, hapusAbsensi } from "./actions";
 import { NamaSantriLink } from "@/components/nama-santri-link";
+import { konfirmasiHapus } from "@/lib/swal";
 import type { Absensi, Siswa, StatusAbsensi } from "@/lib/types";
 
 interface AbsenState {
@@ -136,6 +137,26 @@ export function AbsensiGrid({
     });
   }
 
+  async function onHapus() {
+    const yakin = await konfirmasiHapus({
+      teks: `Hapus absensi tanggal ${tanggal}? Seluruh status santri pada tanggal ini akan dihapus dan tidak bisa dikembalikan.`,
+    });
+    if (!yakin) return;
+
+    startTransition(async () => {
+      const res = await hapusAbsensi({ kelas_id: kelasId, tanggal });
+      if (!res.ok) {
+        setPesan({ ok: false, teks: res.error ?? "Gagal menghapus absensi" });
+        return;
+      }
+      // Kembalikan tampilan ke status awal (semua hadir) karena baris
+      // absensi tanggal ini sudah tidak ada.
+      tandaiSemuaHadir();
+      setPesan({ ok: true, teks: "Absensi tanggal ini dihapus." });
+      router.refresh();
+    });
+  }
+
   return (
     <div className="space-y-4">
       {aktif && (
@@ -222,6 +243,15 @@ export function AbsensiGrid({
           >
             {pending ? "Menyimpan…" : "Simpan Absensi"}
           </button>
+          {existing.length > 0 && (
+            <button
+              onClick={onHapus}
+              disabled={pending}
+              className="btn-secondary w-full text-red-600 sm:w-auto"
+            >
+              Hapus Absensi
+            </button>
+          )}
           {pesan && (
             <p
               className={`text-sm ${pesan.ok ? "text-emerald-600" : "text-red-600"}`}

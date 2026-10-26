@@ -17,4 +17,10 @@ export const simpanAbsensiSchema = z.object({
   items: z.array(absensiItemSchema).min(1),
 });
 
+/** Hapus seluruh absensi satu kelas pada satu tanggal. */
+export const hapusAbsensiSchema = z.object({
+  kelas_id: z.string().uuid(),
+  tanggal: z.string().date(),
+});
+
 export type AbsensiItem = z.infer<typeof absensiItemSchema>;
