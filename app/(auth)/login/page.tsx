@@ -9,7 +9,7 @@ export default function LoginPage() {
           Absensi Santri
         </h1>
         <p className="mt-1 text-sm text-slate-500">
-          Masuk dengan akun guru Anda
+          Masuk dengan akun yang diberikan admin madrasah
         </p>
         <LoginForm />
       </div>

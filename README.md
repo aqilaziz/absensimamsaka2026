@@ -38,6 +38,11 @@ Rancangan arsitektur: `../arsitektur-absensi-nextjs-supabase.md`
 4. **Buat akun guru** — Authentication → Users → Add user (email + password).
    Profil dibuat otomatis oleh trigger `handle_new_user`. Setiap profil default ber-role `guru`.
 
+   **Pendaftaran mandiri dimatikan.** Tidak ada tombol daftar maupun login Google di
+   halaman masuk; guru yang belum punya akun diminta menghubungi admin. Pastikan di
+   Supabase → Authentication → Providers/Settings: `disable signup` aktif dan Google
+   provider nonaktif, supaya akun hanya bisa dibuat admin.
+
 5. **Jadikan seorang admin** — setelah migrasi `0008_role_admin.sql` dijalankan, set role
    `admin` untuk profil tertentu lewat SQL Editor:
 
