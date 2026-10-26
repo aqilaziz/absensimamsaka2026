@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { NavLink } from "@/components/nav-link";
 import { logout } from "./actions";
@@ -9,6 +10,7 @@ import {
   Archive,
   CalendarRange,
   CheckSquare,
+  KeyRound,
   LayoutDashboard,
   LogOut,
   Search,
@@ -181,7 +183,13 @@ async function SidebarContent() {
         </div>
       )}
 
-      <div className="mt-auto p-3">
+      <div className="mt-auto space-y-1 p-3">
+        <Link
+          href="/akun"
+          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-emerald-100/80 transition hover:bg-emerald-800/60 hover:text-white"
+        >
+          <KeyRound size={16} /> Akun &amp; Kata Sandi
+        </Link>
         <form action={logout}>
           <button
             type="submit"
@@ -257,6 +265,7 @@ export default async function DashboardLayout({
             {!isAdmin && <NavLink href="/ambil-kelas">Ambil</NavLink>}
             <NavLink href="/cari-santri">Cari</NavLink>
             <NavLink href="/arsip">Arsip</NavLink>
+            <NavLink href="/akun">Akun</NavLink>
           </nav>
         </header>
 
