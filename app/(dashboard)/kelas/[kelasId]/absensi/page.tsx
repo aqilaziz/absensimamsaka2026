@@ -56,10 +56,11 @@ export default async function AbsensiPage({
       .select("*")
       .eq("kelas_id", kelasId)
       .eq("tanggal", tanggal),
-    // Riwayat: semua absensi kelas ini (untuk daftar tanggal + rekap singkat).
+    // Riwayat: semua absensi kelas ini (untuk daftar tanggal, rekap singkat,
+    // dan status pertemuan sebelumnya per santri).
     supabase
       .from("absensi")
-      .select("tanggal, status")
+      .select("tanggal, status, siswa_id, keterangan")
       .eq("kelas_id", kelasId)
       .order("tanggal", { ascending: false }),
     // Jurnal mengajar untuk tanggal ini (opsional).
@@ -80,11 +81,12 @@ export default async function AbsensiPage({
   const absensiList = (absensiData ?? []) as Absensi[];
 
   // Kelompokkan riwayat per tanggal.
-  const petaHari = new Map<string, HariAbsensi>();
-  for (const a of (riwayatData ?? []) as Pick<
+  const riwayat = (riwayatData ?? []) as Pick<
     Absensi,
-    "tanggal" | "status"
-  >[]) {
+    "tanggal" | "status" | "siswa_id" | "keterangan"
+  >[];
+  const petaHari = new Map<string, HariAbsensi>();
+  for (const a of riwayat) {
     const hari = petaHari.get(a.tanggal) ?? {
       tanggal: a.tanggal,
       hadir: 0,
@@ -100,6 +102,13 @@ export default async function AbsensiPage({
   const hariList = [...petaHari.values()].sort((a, b) =>
     a.tanggal < b.tanggal ? 1 : -1,
   );
+
+  // Pertemuan sebelumnya = tanggal terakhir sebelum tanggal yang dibuka.
+  const tanggalSebelum =
+    hariList.find((h) => h.tanggal < tanggal)?.tanggal ?? null;
+  const absensiSebelum = tanggalSebelum
+    ? riwayat.filter((a) => a.tanggal === tanggalSebelum)
+    : [];
 
   return (
     <div className="space-y-6">
@@ -150,6 +159,8 @@ export default async function AbsensiPage({
           siswaList={siswaList}
           existing={absensiList}
           aktif={aktif}
+          tanggalSebelum={tanggalSebelum}
+          absensiSebelum={absensiSebelum}
         />
       )}
 

@@ -2,6 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { format } from "date-fns";
+import { id as localeId } from "date-fns/locale";
+import { Copy } from "lucide-react";
 import { simpanAbsensi, hapusAbsensi } from "./actions";
 import { NamaSantriLink } from "@/components/nama-santri-link";
 import { konfirmasiHapus } from "@/lib/swal";
@@ -11,6 +14,27 @@ interface AbsenState {
   status: StatusAbsensi;
   keterangan: string;
 }
+
+interface AbsenSebelum {
+  siswa_id: string;
+  tanggal: string;
+  status: StatusAbsensi;
+  keterangan: string | null;
+}
+
+const LABEL_STATUS: Record<StatusAbsensi, string> = {
+  hadir: "Hadir",
+  sakit: "Sakit",
+  izin: "Izin",
+  alpha: "Alpha",
+};
+
+const TITIK_STATUS: Record<StatusAbsensi, string> = {
+  hadir: "bg-emerald-500",
+  sakit: "bg-amber-500",
+  izin: "bg-sky-500",
+  alpha: "bg-red-500",
+};
 
 const STATUS_LIST: {
   key: StatusAbsensi;
@@ -45,12 +69,18 @@ export function AbsensiGrid({
   siswaList,
   existing,
   aktif,
+  tanggalSebelum,
+  absensiSebelum,
 }: {
   kelasId: string;
   tanggal: string;
   siswaList: Siswa[];
   existing: Absensi[];
   aktif: boolean;
+  /** Tanggal pertemuan sebelumnya (null bila belum ada riwayat). */
+  tanggalSebelum?: string | null;
+  /** Absensi pada pertemuan sebelumnya, untuk info & tombol salin. */
+  absensiSebelum?: AbsenSebelum[];
 }) {
   const [state, setState] = useState<Record<string, AbsenState>>(() => {
     const map: Record<string, AbsenState> = {};
@@ -68,6 +98,24 @@ export function AbsensiGrid({
   );
   const [pending, startTransition] = useTransition();
   const router = useRouter();
+
+  const sebelumnya = new Map(
+    (absensiSebelum ?? []).map((a) => [a.siswa_id, a]),
+  );
+
+  /** Salin status + keterangan dari pertemuan sebelumnya untuk satu santri. */
+  function salinSebelum(siswaId: string) {
+    const prev = sebelumnya.get(siswaId);
+    if (!prev) return;
+    setState((s) => ({
+      ...s,
+      [siswaId]: {
+        status: prev.status,
+        keterangan: prev.keterangan ?? "",
+      },
+    }));
+    setPesan(null);
+  }
 
   function setStatus(siswaId: string, status: StatusAbsensi) {
     setState((prev) => ({
@@ -175,6 +223,9 @@ export function AbsensiGrid({
               <th className="th">Nama Santri</th>
               <th className="th">Status</th>
               <th className="th w-64">Keterangan</th>
+              <th className="th w-10">
+                <span className="sr-only">Salin pertemuan lalu</span>
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -182,11 +233,33 @@ export function AbsensiGrid({
               const st = state[s.id];
               const butuhKeterangan =
                 st.status === "sakit" || st.status === "izin";
+              const prev = sebelumnya.get(s.id);
+              const tampilkanPrev = prev && prev.status !== "hadir";
               return (
                 <tr key={s.id} className="hover:bg-slate-50/60">
                   <td className="td text-slate-400">{i + 1}</td>
                   <td className="td">
                     <NamaSantriLink id={s.id} nama={s.nama} />
+                    {tampilkanPrev && (
+                      <span className="mt-0.5 flex max-w-[16rem] items-center gap-1 text-[11px] text-slate-500">
+                        <span
+                          className={`h-1.5 w-1.5 shrink-0 rounded-full ${TITIK_STATUS[prev.status]}`}
+                        />
+                        <span className="shrink-0 font-medium">
+                          {LABEL_STATUS[prev.status]}
+                        </span>
+                        <span className="shrink-0 text-slate-400">
+                          {format(new Date(prev.tanggal + "T00:00:00"), "d MMM", {
+                            locale: localeId,
+                          })}
+                        </span>
+                        {prev.keterangan && (
+                          <span className="truncate" title={prev.keterangan}>
+                            · {prev.keterangan}
+                          </span>
+                        )}
+                      </span>
+                    )}
                   </td>
                   <td className="td">
                     <div className="flex flex-wrap gap-1.5">
@@ -225,6 +298,24 @@ export function AbsensiGrid({
                       />
                     ) : (
                       <span className="text-slate-300">—</span>
+                    )}
+                  </td>
+                  <td className="td">
+                    {prev ? (
+                      <button
+                        type="button"
+                        disabled={!aktif}
+                        onClick={() => salinSebelum(s.id)}
+                        title={`Salin dari pertemuan lalu (${LABEL_STATUS[prev.status]}${
+                          prev.keterangan ? ` — ${prev.keterangan}` : ""
+                        })`}
+                        aria-label={`Salin status ${s.nama} dari pertemuan lalu`}
+                        className="rounded p-1 text-slate-400 transition hover:bg-emerald-50 hover:text-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <Copy size={14} />
+                      </button>
+                    ) : (
+                      <span className="text-slate-200">—</span>
                     )}
                   </td>
                 </tr>
