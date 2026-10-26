@@ -132,9 +132,15 @@ export interface Jurnal {
   kelas_id: string;
   guru_id: string;
   tanggal: string;
-  pertemuan: number | null;
+  /** Judul sesi, mis. "Pertemuan Senin, 26/10/2026". */
+  judul: string | null;
+  /** Jam ke-berapa (1–9). */
+  jam_mulai: number | null;
+  jam_selesai: number | null;
+  /** Topik pembelajaran. */
+  topik: string | null;
   materi: string | null;
-  tujuan: string | null;
+  /** Metode/kegiatan pembelajaran. */
   kegiatan: string | null;
   catatan: string | null;
   created_at: string;
