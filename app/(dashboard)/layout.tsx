@@ -6,7 +6,7 @@ import { logout } from "./actions";
 import { labelSemester, semesterAktifHariIni } from "@/lib/periode";
 import { ambilKelasSaya, type KelasRingkas } from "@/lib/kelas";
 import { ambilProfilSendiri } from "@/lib/profil";
-import type { Profile, Semester, TahunPelajaran } from "@/lib/types";
+import type { Semester, TahunPelajaran } from "@/lib/types";
 import {
   Archive,
   CalendarRange,
@@ -22,8 +22,9 @@ import {
 // Sidebar dimuat terpisah agar tidak memblokir render halaman.
 // Sebelumnya layout menunggu 4 query Supabase sebelum children bisa tampil,
 // sehingga setiap klik menu terasa menggantung.
-async function SidebarContent({ profil }: { profil: Profile | null }) {
+async function SidebarContent() {
   const supabase = await createClient();
+  const profil = await ambilProfilSendiri(supabase);
 
   const isAdmin = profil?.role === "admin";
   // Hanya ada satu tahun pelajaran aktif untuk seluruh madrasah.
@@ -225,64 +226,80 @@ function SidebarSkeleton() {
   );
 }
 
-export default async function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  // Profil diambil SEKALI di sini lalu diteruskan ke sidebar — sebelumnya
-  // layout dan sidebar masing-masing memanggil getUser() + query profil,
-  // sehingga setiap navigasi membayar dua round-trip ekstra.
+/** Topbar khusus layar kecil. Dibuat komponen sendiri agar peran pengguna
+ *  dimuat di dalam Suspense — tidak menahan render halaman. */
+async function TopbarMobile() {
   const supabase = await createClient();
   const profil = await ambilProfilSendiri(supabase);
   const isAdmin = profil?.role === "admin";
 
   return (
+    <header className="no-scrollbar sticky top-0 z-20 flex items-center gap-3 overflow-x-auto bg-emerald-950 px-4 py-3 md:hidden">
+      <div className="flex shrink-0 items-center gap-2">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logomam1.png"
+          alt="Logo MAM 1 Paciran"
+          width={28}
+          height={28}
+          className="h-7 w-7 rounded-full bg-white object-contain p-0.5"
+        />
+        <span className="font-bold leading-tight text-white">MAM 1 Paciran</span>
+      </div>
+      <nav className="flex shrink-0 items-center gap-1 text-sm">
+        <NavLink href="/" exact>
+          Dashboard
+        </NavLink>
+        <NavLink href="/kelas" exact>
+          Kelas
+        </NavLink>
+        {!isAdmin && <NavLink href="/ambil-kelas">Ambil</NavLink>}
+        <NavLink href="/cari-santri">Cari</NavLink>
+        <NavLink href="/arsip">Arsip</NavLink>
+        <NavLink href="/akun">Akun</NavLink>
+        <form action={logout} className="shrink-0 pl-1">
+          <button
+            type="submit"
+            className="rounded-md bg-red-600 px-2.5 py-1 text-xs font-semibold text-white transition hover:bg-red-700"
+          >
+            Keluar
+          </button>
+        </form>
+      </nav>
+    </header>
+  );
+}
+
+function TopbarSkeleton() {
+  return (
+    <div className="flex animate-pulse items-center gap-3 bg-emerald-950 px-4 py-3 md:hidden">
+      <div className="h-7 w-7 rounded-full bg-emerald-800/60" />
+      <div className="h-4 w-28 rounded bg-emerald-800/60" />
+    </div>
+  );
+}
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  // Sengaja TANPA await: halaman (children) langsung dirender, sedangkan
+  // profil/sidebar dimuat menyusul di dalam Suspense. Sebelumnya layout
+  // menunggu query profil dulu sehingga setiap navigasi tertahan ~200-400 ms.
+  return (
     <div className="flex min-h-screen">
       {/* Sidebar desktop — dimuat terpisah agar children tidak menunggu. */}
       <aside className="hidden w-64 shrink-0 flex-col overflow-y-auto bg-emerald-950 md:flex">
         <Suspense fallback={<SidebarSkeleton />}>
-          <SidebarContent profil={profil} />
+          <SidebarContent />
         </Suspense>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* Topbar mobile */}
-        <header className="no-scrollbar sticky top-0 z-20 flex items-center gap-3 overflow-x-auto bg-emerald-950 px-4 py-3 md:hidden">
-          <div className="flex shrink-0 items-center gap-2">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/logomam1.png"
-              alt="Logo MAM 1 Paciran"
-              width={28}
-              height={28}
-              className="h-7 w-7 rounded-full bg-white object-contain p-0.5"
-            />
-            <span className="font-bold leading-tight text-white">
-              MAM 1 Paciran
-            </span>
-          </div>
-          <nav className="flex shrink-0 items-center gap-1 text-sm">
-            <NavLink href="/" exact>
-              Dashboard
-            </NavLink>
-            <NavLink href="/kelas" exact>
-              Kelas
-            </NavLink>
-            {!isAdmin && <NavLink href="/ambil-kelas">Ambil</NavLink>}
-            <NavLink href="/cari-santri">Cari</NavLink>
-            <NavLink href="/arsip">Arsip</NavLink>
-            <NavLink href="/akun">Akun</NavLink>
-            <form action={logout} className="shrink-0 pl-1">
-              <button
-                type="submit"
-                className="rounded-md bg-red-600 px-2.5 py-1 text-xs font-semibold text-white transition hover:bg-red-700"
-              >
-                Keluar
-              </button>
-            </form>
-          </nav>
-        </header>
+        <Suspense fallback={<TopbarSkeleton />}>
+          <TopbarMobile />
+        </Suspense>
 
         <main className="min-w-0 flex-1 p-4 sm:p-6 md:p-8">{children}</main>
       </div>
