@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/admin";
 import { PersenBadge } from "@/components/persen-badge";
 import { labelSemester } from "@/lib/periode";
 import { temaMapel } from "@/lib/mapel";
+import { PilihGuru } from "./pilih-guru";
 import type { AdminKelasRow, TahunPelajaran } from "@/lib/types";
 
 interface GuruLite {
@@ -55,9 +56,28 @@ export default async function AdminDashboardPage({
     .eq("tahun_id", pilihTahun.id);
 
   const rows = (rowData ?? []) as AdminKelasRow[];
-  const rowsFilter = guruTerpilih
-    ? rows.filter((r) => r.guru_id === guruTerpilih)
-    : rows;
+  const rowsFilter =
+    guruTerpilih === "belum"
+      ? rows.filter((r) => r.guru_id == null)
+      : guruTerpilih
+        ? rows.filter((r) => r.guru_id === guruTerpilih)
+        : rows;
+
+  // Jumlah kelas unik per guru (satu kelas bisa muncul beberapa baris bila
+  // diampu lebih dari satu mapel).
+  const kelasPerGuru = new Map<string, Set<string>>();
+  for (const r of rows) {
+    const kunci = r.guru_id ?? "belum";
+    const set = kelasPerGuru.get(kunci) ?? new Set<string>();
+    set.add(r.kelas_id);
+    kelasPerGuru.set(kunci, set);
+  }
+  const opsiGuru = gurus.map((g) => ({
+    id: g.id,
+    nama: g.nama,
+    jumlahKelas: kelasPerGuru.get(g.id)?.size ?? 0,
+  }));
+  const adaTanpaPengampu = (kelasPerGuru.get("belum")?.size ?? 0) > 0;
 
   // Kelompokkan per guru pengampu. Baris tanpa pengampu (kelas baru yang
   // belum dicentang guru) dikelompokkan sebagai "Belum ada pengampu".
@@ -136,31 +156,12 @@ export default async function AdminDashboardPage({
       </div>
 
       {/* Filter guru */}
-      <div className="no-scrollbar flex max-w-full gap-1 overflow-x-auto rounded-xl bg-white p-1 ring-1 ring-slate-200">
-        <Link
-          href={`/admin?tahun=${pilihTahun.nama}`}
-          className={
-            !guruTerpilih
-              ? "shrink-0 whitespace-nowrap rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white"
-              : "shrink-0 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100"
-          }
-        >
-          Semua Guru
-        </Link>
-        {gurus.map((g) => (
-          <Link
-            key={g.id}
-            href={`/admin?tahun=${pilihTahun.nama}&guru=${g.id}`}
-            className={
-              guruTerpilih === g.id
-                ? "shrink-0 whitespace-nowrap rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white"
-                : "shrink-0 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100"
-            }
-          >
-            {g.nama}
-          </Link>
-        ))}
-      </div>
+      <PilihGuru
+        tahunId={pilihTahun.id}
+        nilai={guruTerpilih}
+        gurus={opsiGuru}
+        adaTanpaPengampu={adaTanpaPengampu}
+      />
 
       {/* Kartu ringkasan */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -175,7 +176,11 @@ export default async function AdminDashboardPage({
 
       {kelompok.length === 0 ? (
         <p className="card text-sm text-slate-500">
-          Belum ada kelas di tahun {pilihTahun.nama}.
+          {guruTerpilih === "belum"
+            ? `Semua kelas di tahun ${pilihTahun.nama} sudah punya pengampu.`
+            : guruTerpilih
+              ? "Guru ini belum mengambil kelas di tahun pelajaran ini."
+              : `Belum ada kelas di tahun ${pilihTahun.nama}.`}
         </p>
       ) : (
         <div className="space-y-6">
