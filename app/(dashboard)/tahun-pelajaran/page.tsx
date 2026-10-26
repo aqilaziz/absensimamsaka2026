@@ -29,6 +29,9 @@ export default async function TahunPelajaranPage() {
     .order("tgl_mulai", { ascending: false });
 
   const tahunList = (data ?? []) as unknown as TahunDenganKelas[];
+  // Hanya satu tahun yang boleh aktif, jadi tombol buat hanya muncul bila
+  // belum ada tahun aktif (tahun lama harus diarsipkan lebih dulu).
+  const adaAktif = tahunList.some((t) => t.status === "aktif");
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -38,10 +41,11 @@ export default async function TahunPelajaranPage() {
             Tahun Pelajaran
           </h1>
           <p className="text-sm text-slate-500">
-            Satu tahun aktif; tahun lama tersimpan sebagai arsip.
+            Satu tahun aktif untuk seluruh madrasah; tahun lama tersimpan sebagai
+            arsip.
           </p>
         </div>
-        <TahunForm isAdmin={isAdmin} />
+        {!adaAktif && <TahunForm />}
       </div>
 
       {tahunList.length === 0 && (
@@ -53,7 +57,9 @@ export default async function TahunPelajaranPage() {
 
       <div className="space-y-3">
         {tahunList.map((t) => {
-          const sendiri = (t as { guru_id?: string | null }).guru_id != null;
+          // Data bersama: admin boleh mengelola semua tahun, guru hanya tahun
+          // yang ia buat sendiri.
+          const sendiri = isAdmin || (uid != null && t.guru_id === uid);
           return (
             <div key={t.id} className="card space-y-3">
               <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
@@ -61,7 +67,7 @@ export default async function TahunPelajaranPage() {
                   <span className="break-words text-lg font-semibold text-slate-900">
                     {t.nama}
                   </span>
-                  {!sendiri && (
+                  {t.guru_id === null && (
                     <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-500">
                       dari Admin
                     </span>

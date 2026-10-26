@@ -41,12 +41,14 @@ export default async function AdminKelasDetailPage({
   if (!kelasData) notFound();
   const kelas = kelasData as unknown as KelasDetail;
 
-  const { data: guruData } = await supabase
-    .from("profiles")
-    .select("nama")
-    .eq("id", kelas.guru_id)
-    .maybeSingle();
-  const guruNama = guruData?.nama ?? "-";
+  const { data: guruData } = kelas.guru_id
+    ? await supabase
+        .from("profiles")
+        .select("nama")
+        .eq("id", kelas.guru_id)
+        .maybeSingle()
+    : { data: null };
+  const guruNama = guruData?.nama ?? "Bersama (Admin)";
 
   const rentang = hitungRentang(periode, nilai, kelas.tahun_pelajaran);
 

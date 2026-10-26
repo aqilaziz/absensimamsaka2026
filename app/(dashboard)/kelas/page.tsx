@@ -31,23 +31,22 @@ export default async function KelasPage({
   const sp = await searchParams;
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const uid = user?.id ?? null;
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, role")
+    .single();
+  const profil = profile as { id: string; role: string } | null;
+  const uid = profil?.id ?? null;
+  const isAdmin = profil?.role === "admin";
 
-  // Pilih tahun aktif: utamakan milik guru sendiri, lalu tahun bersama (dibuat
-  // admin, guru_id NULL), terakhir sembarang tahun aktif.
+  // Hanya ada satu tahun aktif untuk seluruh madrasah (dijaga index unik
+  // `satu_tahun_aktif_global`), sehingga tidak perlu memilih lagi.
   const { data: tahunAktifArr } = await supabase
     .from("tahun_pelajaran")
     .select("*")
     .eq("status", "aktif");
   const aktifList = (tahunAktifArr ?? []) as TahunPelajaran[];
-  const tahun =
-    aktifList.find((t) => t.guru_id === uid) ??
-    aktifList.find((t) => t.guru_id !== uid) ??
-    aktifList[0] ??
-    null;
+  const tahun = aktifList[0] ?? null;
 
   if (!tahun) {
     return (
@@ -84,11 +83,11 @@ export default async function KelasPage({
   const semesters = (semData ?? []) as Semester[];
   const mapels = (mapelData ?? []) as Mapel[];
 
-  // Hanya mapel milik sendiri yang bisa dikelola guru; mapel bersama (guru_id
-  // NULL) bersifat hanya-baca untuk guru.
-  const mapelSendiri = mapels.filter(
-    (m) => (m as { guru_id?: string | null }).guru_id != null,
-  );
+  // Mapel adalah daftar bersama; guru hanya boleh mengubah mapel yang ia buat
+  // sendiri (mapel bersama/admin dikelola admin).
+  const mapelSendiri = isAdmin
+    ? mapels
+    : mapels.filter((m) => m.guru_id === uid);
 
   const pilihan: NamaSemester =
     sp.semester === "genap" || sp.semester === "ganjil"
@@ -169,7 +168,7 @@ export default async function KelasPage({
         <div className="space-y-3">
           {kelasList.map((k) => {
             const t = temaMapel(k.mapel?.warna);
-            const sendiri = (k as { guru_id?: string | null }).guru_id != null;
+            const sendiri = isAdmin || (uid != null && k.guru_id === uid);
             return (
               <div
                 key={k.id}
@@ -187,7 +186,7 @@ export default async function KelasPage({
                       {k.nama}
                     </Link>
                     <MapelBadge mapel={k.mapel} />
-                    {!sendiri && (
+                    {k.guru_id === null && (
                       <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
                         dari Admin
                       </span>

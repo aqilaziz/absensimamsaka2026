@@ -16,8 +16,11 @@ async function getContext() {
 }
 
 /**
- * Tentukan id mapel untuk kelas: pakai yang sudah dipilih, atau buat mapel
- * baru milik guru ini. Mengembalikan pesan galat bila gagal.
+ * Tentukan id mapel untuk kelas: pakai yang sudah dipilih, pakai mapel yang
+ * sudah ada dengan nama sama, atau buat baru.
+ *
+ * Daftar mapel bersifat bersama (seluruh madrasah memakai satu daftar), jadi
+ * nama yang sama tidak dibuat dua kali — termasuk mapel buatan guru lain.
  */
 async function siapkanMapel(
   supabase: SupabaseClient,
@@ -27,37 +30,42 @@ async function siapkanMapel(
   if (data.mapel_id) {
     const { data: mapel } = await supabase
       .from("mapel")
-      .select("id, guru_id")
+      .select("id")
       .eq("id", data.mapel_id)
       .maybeSingle();
     if (!mapel) return { error: "Mata pelajaran tidak ditemukan" };
-    const guruId = (mapel as { guru_id: string | null }).guru_id;
-    // Guru boleh memakai mapel miliknya sendiri ATAU mapel bersama (admin).
-    if (guruId !== userId && guruId !== null) {
-      return { error: "Mata pelajaran tidak ditemukan" };
-    }
     return { mapelId: (mapel as { id: string }).id };
   }
 
   if (data.mapel_baru) {
+    const nama = data.mapel_baru.nama.trim();
+
+    // Pakai mapel yang sudah ada dengan nama sama (tanpa membedakan huruf
+    // besar/kecil) supaya "Matematika" tidak muncul berganda.
+    const { data: semua } = await supabase.from("mapel").select("id, nama");
+    const daftar = (semua ?? []) as { id: string; nama: string }[];
+    const sama = daftar.find(
+      (m) => m.nama.trim().toLowerCase() === nama.toLowerCase(),
+    );
+    if (sama) return { mapelId: sama.id };
+
     const { data: mapel, error } = await supabase
       .from("mapel")
       .insert({
         guru_id: userId,
-        nama: data.mapel_baru.nama,
+        nama,
         warna: data.mapel_baru.warna,
       })
       .select("id")
       .single();
     if (error) {
       if (error.code === "23505") {
-        // Mapel dengan nama sama sudah ada → pakai yang sudah ada.
-        const { data: ada } = await supabase
-          .from("mapel")
-          .select("id")
-          .ilike("nama", data.mapel_baru.nama)
-          .maybeSingle();
-        if (ada) return { mapelId: (ada as { id: string }).id };
+        // Balapan dengan request lain → pakai baris yang sudah tersimpan.
+        const { data: ulang } = await supabase.from("mapel").select("id, nama");
+        const ada = ((ulang ?? []) as { id: string; nama: string }[]).find(
+          (m) => m.nama.trim().toLowerCase() === nama.toLowerCase(),
+        );
+        if (ada) return { mapelId: ada.id };
         return { error: "Mata pelajaran sudah ada" };
       }
       return { error: error.message };

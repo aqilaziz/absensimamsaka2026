@@ -25,25 +25,31 @@ async function siapkanMapelAdmin(
   }
 
   if (data.mapel_baru) {
+    const nama = data.mapel_baru.nama.trim();
+
+    // Mapel adalah daftar bersama: pakai yang sudah ada (siapa pun pembuatnya).
+    const { data: semua } = await supabase.from("mapel").select("id, nama");
+    const sama = ((semua ?? []) as { id: string; nama: string }[]).find(
+      (m) => m.nama.trim().toLowerCase() === nama.toLowerCase(),
+    );
+    if (sama) return { mapelId: sama.id };
+
     const { data: mapel, error } = await supabase
       .from("mapel")
       .insert({
         guru_id: null,
-        nama: data.mapel_baru.nama,
+        nama,
         warna: data.mapel_baru.warna,
       })
       .select("id")
       .single();
     if (error) {
       if (error.code === "23505") {
-        // Mapel bersama dengan nama sama sudah ada → pakai yang sudah ada.
-        const { data: ada } = await supabase
-          .from("mapel")
-          .select("id")
-          .eq("guru_id", null)
-          .ilike("nama", data.mapel_baru.nama)
-          .maybeSingle();
-        if (ada) return { mapelId: (ada as { id: string }).id };
+        const { data: ulang } = await supabase.from("mapel").select("id, nama");
+        const ada = ((ulang ?? []) as { id: string; nama: string }[]).find(
+          (m) => m.nama.trim().toLowerCase() === nama.toLowerCase(),
+        );
+        if (ada) return { mapelId: ada.id };
         return { error: "Mata pelajaran sudah ada" };
       }
       return { error: error.message };
@@ -86,6 +92,12 @@ async function siapkanTahunDanSemester(
       .select("id")
       .single();
     if (error) {
+      if (error.message.includes("satu_tahun_aktif_global")) {
+        return {
+          error:
+            "Sudah ada tahun pelajaran aktif untuk madrasah ini. Arsipkan dulu di menu Tahun Pelajaran.",
+        };
+      }
       if (error.code === "23505") {
         return { error: "Tahun pelajaran dengan nama ini sudah ada" };
       }

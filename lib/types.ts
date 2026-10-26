@@ -28,9 +28,11 @@ export interface Profile {
 /** Baris rekap per kelas untuk Dashboard Admin (view v_admin_rekap_kelas). */
 export interface AdminKelasRow {
   kelas_id: string;
-  guru_id: string;
+  /** Pembuat kelas; NULL bila dibuat admin (data bersama). */
+  guru_id: string | null;
   guru: string;
   kelas: string;
+  tahun_id: string;
   tahun: string;
   semester: NamaSemester;
   mapel: string | null;
@@ -49,7 +51,8 @@ export interface AdminKelasRow {
 export interface Semester {
   id: string;
   tahun_pelajaran_id: string;
-  guru_id: string;
+  /** NULL bila semester milik tahun bersama (dibuat admin). */
+  guru_id: string | null;
   nama: NamaSemester;
   urutan: number;
   tgl_mulai: string;
@@ -59,7 +62,8 @@ export interface Semester {
 
 export interface TahunPelajaran {
   id: string;
-  guru_id: string;
+  /** NULL bila tahun bersama (dibuat admin); selain itu id pembuat. */
+  guru_id: string | null;
   nama: string;
   tgl_mulai: string;
   tgl_selesai: string;
@@ -70,7 +74,8 @@ export interface TahunPelajaran {
 
 export interface Mapel {
   id: string;
-  guru_id: string;
+  /** NULL bila mapel bersama (dibuat admin). */
+  guru_id: string | null;
   nama: string;
   warna: WarnaMapel;
   created_at: string;
@@ -81,7 +86,8 @@ export interface Kelas {
   tahun_pelajaran_id: string;
   semester_id: string;
   mapel_id: string | null;
-  guru_id: string;
+  /** NULL bila kelas bersama (dibuat admin). */
+  guru_id: string | null;
   nama: string;
   created_at: string;
 }
@@ -89,7 +95,8 @@ export interface Kelas {
 export interface Siswa {
   id: string;
   kelas_id: string;
-  guru_id: string;
+  /** NULL bila santri didaftarkan admin. */
+  guru_id: string | null;
   nama: string;
   nis: string | null;
   urutan: number;

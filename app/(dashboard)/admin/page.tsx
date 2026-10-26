@@ -44,35 +44,42 @@ export default async function AdminDashboardPage({
   }
 
   const aktif = tahunList.find((t) => t.status === "aktif") ?? tahunList[0];
-  const pilihTahun = tahunList.find((t) => t.nama === sp.tahun) ?? aktif;
+  // Filter memakai id: nama tahun bisa sama antar-data, id tidak.
+  const pilihTahun = tahunList.find((t) => t.id === sp.tahun) ?? aktif;
 
   const guruTerpilih = sp.guru ?? "";
 
   const { data: rowData } = await supabase
     .from("v_admin_rekap_kelas")
     .select("*")
-    .eq("tahun", pilihTahun.nama);
+    .eq("tahun_id", pilihTahun.id);
 
   const rows = (rowData ?? []) as AdminKelasRow[];
   const rowsFilter = guruTerpilih
     ? rows.filter((r) => r.guru_id === guruTerpilih)
     : rows;
 
-  // Kelompokkan per guru (urutkan sesuai daftar guru).
+  // Kelompokkan per pembuat kelas (urutkan sesuai daftar guru).
+  // Kelas buatan admin (guru_id NULL) dikelompokkan sebagai "bersama".
+  const kunciGuru = (r: AdminKelasRow) => r.guru_id ?? "bersama";
   const olehGuru = new Map<string, AdminKelasRow[]>();
   for (const r of rowsFilter) {
-    const arr = olehGuru.get(r.guru_id) ?? [];
+    const arr = olehGuru.get(kunciGuru(r)) ?? [];
     arr.push(r);
-    olehGuru.set(r.guru_id, arr);
+    olehGuru.set(kunciGuru(r), arr);
   }
   const urutanGuru = gurus
     .filter((g) => olehGuru.has(g.id))
     .map((g) => ({ guru: g, rows: olehGuru.get(g.id)! }));
-  // Guru yang punya kelas tapi belum ada di daftar role guru (aman).
+  // Kelompok yang tidak ada di daftar role guru (termasuk kelas bersama).
   const ekstra = [...olehGuru.keys()]
     .filter((id) => !gurus.some((g) => g.id === id))
     .map((id) => ({
-      guru: { id, nama: rowsFilter.find((r) => r.guru_id === id)?.guru ?? "-" },
+      guru: {
+        id,
+        nama:
+          rowsFilter.find((r) => kunciGuru(r) === id)?.guru ?? "Bersama (Admin)",
+      },
       rows: olehGuru.get(id)!,
     }));
   const kelompok = [...urutanGuru, ...ekstra];
@@ -112,9 +119,9 @@ export default async function AdminDashboardPage({
         {tahunList.map((t) => (
           <Link
             key={t.id}
-            href={`/admin?tahun=${t.nama}${guruTerpilih ? `&guru=${guruTerpilih}` : ""}`}
+            href={`/admin?tahun=${t.id}${guruTerpilih ? `&guru=${guruTerpilih}` : ""}`}
             className={
-              t.nama === pilihTahun.nama
+              t.id === pilihTahun.id
                 ? "shrink-0 whitespace-nowrap rounded-lg bg-emerald-600 px-4 py-1.5 text-sm font-semibold text-white"
                 : "shrink-0 whitespace-nowrap rounded-lg px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
             }

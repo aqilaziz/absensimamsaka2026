@@ -21,6 +21,7 @@ Rancangan arsitektur: `../arsitektur-absensi-nextjs-supabase.md`
    - `supabase/migrations/0008_role_admin.sql`
    - `supabase/migrations/0009_admin_kelola_kelas.sql`
    - `supabase/migrations/0010_model_bersama.sql`
+   - `supabase/migrations/0011_data_bersama_global.sql`
 
    Atau via CLI: `supabase link --project-ref <ref>` lalu `supabase db push`.
 
@@ -43,24 +44,32 @@ Rancangan arsitektur: `../arsitektur-absensi-nextjs-supabase.md`
    update profiles set role = 'admin' where nama = 'Nama Guru';
    ```
 
-   Admin bisa melihat rekap kehadiran lintas guru di `/admin`, dan sejak migrasi
-   `0009_admin_kelola_kelas.sql` dapat **membuat kelas + daftar santri atas nama
-   seorang guru** lewat `/admin/kelas-baru`.
+   Admin bisa melihat rekap kehadiran lintas guru di `/admin`, dan membuat kelas
+   bersama beserta daftar santrinya lewat `/admin/kelas-baru`.
 
-6. **(Model bersama, migrasi `0010_model_bersama.sql`)** — admin dapat membuat **data
-   bersama/bacaa**: tahun pelajaran, semester, mapel, kelas, dan santri dengan
-   `guru_id = NULL` lewat `/admin/kelas-baru`. Semua guru dapat **membaca** data
-   bersama ini (muncul di `/kelas`, `/tahun-pelajaran`, dst) dan **memakai**-nya
-   (mis. memilih mapel bersama saat membuat kelas sendiri), tetapi tidak dapat
-   mengubah/menghapusnya — hanya admin. Guru tetap bisa membuat data miliknya sendiri.
-   Absensi & tugas tetap bisa diisi pada kelas bersama oleh guru mana pun.
+6. **(Data bersama, migrasi `0011_data_bersama_global.sql`)** — satu database untuk
+   seluruh madrasah.
 
-   **Admin membuat tahun bersama** dari `/tahun-pelajaran`: di form "Buat Tahun
-   Pelajaran" ada centang *"Buat sebagai tahun BERSAMA"* (default aktif khusus
-   admin) sehingga tahun + kedua semesternya dibuat dengan `guru_id = NULL` dan
-   langsung terlihat oleh semua guru. Dashboard & sidebar kini menangani banyak
-   tahun aktif (bila admin juga punya/melihat tahun milik guru): prioritas tahun
-   milik sendiri → tahun bersama → tahun pertama.
+   - **Tahun pelajaran** hanya boleh **satu yang aktif** (dijaga index unik
+     `satu_tahun_aktif_global`), sehingga semua guru otomatis memakai tahun yang sama.
+     Admin membuatnya sebagai data bersama (`guru_id = NULL`); bila admin belum membuat,
+     guru mana pun boleh membuat dan tahun itu langsung dipakai semua guru.
+   - **Kelas, santri, dan mapel** dapat dibaca semua guru. Guru dapat menambah kelas
+     sendiri, memakai kelas/mapel buatan guru lain, serta menambah, memperbaiki, dan
+     menghapus santri pada kelas mana pun. Menghapus kelas tetap hanya pemiliknya/admin.
+     Daftar mapel bersifat bersama: nama yang sama dipakai ulang, tidak dibuat ganda.
+   - **Absensi, tugas, pengumpulan, dan jurnal** juga data bersama: semua guru melihat
+     dan dapat mengisi/memperbaiki data yang sama, sehingga rekap dan dashboard admin
+     merupakan gabungan seluruh guru. Bila dua guru mengisi kelas & tanggal yang sama,
+     penyimpanan terakhir yang berlaku.
+   - Kolom `guru_id` tetap diisi sebagai jejak audit (siapa pembuat/pencatat), bukan
+     lagi pembatas akses.
+   - Saat migrasi dijalankan, bila ada beberapa tahun aktif (satu per guru), sistem
+     menyisakan satu (prioritas tahun bersama → paling banyak kelas → paling baru) dan
+     mengarsipkan sisanya.
+
+   **Admin** tetap punya `/admin` (rekap lintas guru) dan `/admin/kelas-baru` untuk
+   membuat kelas + daftar santri bersama sekaligus.
 
 7. **(Opsional) seed data contoh** — ubah email di `supabase/seed.sql` sesuai akun guru, jalankan di SQL Editor.
 

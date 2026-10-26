@@ -41,15 +41,13 @@ export function KelasBaruForm({ tahunList, semList, mapelList }: Props) {
   const [namaKelas, setNamaKelas] = useState("");
   const [rawSiswa, setRawSiswa] = useState("");
 
-  // Hanya data BERSAMA (dibuat admin) yang bisa dipakai untuk kelas bersama.
-  const tahunBersama = useMemo(
-    () => tahunList.filter((t) => t.guru_id === null),
+  // Kelas bersama memakai tahun aktif & mapel yang sudah ada — siapa pun
+  // pembuatnya. Bila belum ada tahun aktif, admin membuat tahun baru.
+  const tahunTersedia = useMemo(
+    () => tahunList.filter((t) => t.status === "aktif"),
     [tahunList],
   );
-  const mapelBersama = useMemo(
-    () => mapelList.filter((m) => m.guru_id === null),
-    [mapelList],
-  );
+  const mapelTersedia = mapelList;
 
   const semesterByTahun = useMemo(() => {
     const m = new Map<string, Semester[]>();
@@ -64,8 +62,8 @@ export function KelasBaruForm({ tahunList, semList, mapelList }: Props) {
   const semesterTahun = tahunId ? (semesterByTahun.get(tahunId) ?? []) : [];
 
   const saranWarna = useMemo(
-    () => warnaMapelSaran(mapelBersama.map((m) => m.warna)),
-    [mapelBersama],
+    () => warnaMapelSaran(mapelTersedia.map((m) => m.warna)),
+    [mapelTersedia],
   );
 
   const parsed = useMemo(() => parseExcelPaste(rawSiswa), [rawSiswa]);
@@ -159,17 +157,21 @@ export function KelasBaruForm({ tahunList, semList, mapelList }: Props) {
             className="input w-full sm:w-80"
           >
             <option value="" disabled>
-              {tahunBersama.length === 0
-                ? "— belum ada tahun bersama —"
-                : "— Pilih tahun (atau buat baru) —"}
+              {tahunTersedia.length === 0
+                ? "— belum ada tahun aktif —"
+                : "— Pilih tahun pelajaran —"}
             </option>
-            {tahunBersama.map((t) => (
+            {tahunTersedia.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.nama}
                 {t.status === "aktif" ? " (aktif)" : ""}
               </option>
             ))}
-            <option value={BARU}>+ Tahun pelajaran baru…</option>
+            {/* Hanya satu tahun aktif untuk seluruh madrasah, jadi opsi
+                membuat tahun baru muncul saat belum ada tahun aktif. */}
+            {tahunTersedia.length === 0 && (
+              <option value={BARU}>+ Tahun pelajaran baru…</option>
+            )}
           </select>
         </label>
 
@@ -307,11 +309,11 @@ export function KelasBaruForm({ tahunList, semList, mapelList }: Props) {
             className="input w-full sm:w-72"
           >
             <option value="" disabled>
-              {mapelBersama.length === 0
-                ? "— belum ada mapel bersama —"
+              {mapelTersedia.length === 0
+                ? "— belum ada mapel —"
                 : "— Pilih mapel (atau buat baru) —"}
             </option>
-            {mapelBersama.map((m) => (
+            {mapelTersedia.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.nama}
               </option>

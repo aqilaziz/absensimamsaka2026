@@ -33,15 +33,9 @@ async function SidebarContent() {
   ]);
 
   const profil = profile as Profile | null;
-  // Admin dapat melihat beberapa tahun aktif sekaligus (milik tiap guru + tahun bersama).
-  // Prioritas: milik sendiri → tahun bersama (guru_id null) → baris pertama.
+  // Hanya ada satu tahun pelajaran aktif untuk seluruh madrasah.
   const aktif = (aktifList ?? []) as TahunPelajaran[];
-  const uid = profil?.id ?? "";
-  const tahun =
-    aktif.find((t) => (t as { guru_id?: string | null }).guru_id === uid) ??
-    aktif.find((t) => (t as { guru_id?: string | null }).guru_id === null) ??
-    aktif[0] ??
-    null;
+  const tahun = aktif[0] ?? null;
 
   let kelasList: (Kelas & { mapel?: Pick<Mapel, "nama" | "warna"> | null })[] =
     [];
@@ -142,7 +136,7 @@ async function SidebarContent() {
       {kelasList.length > 0 && (
         <div className="mt-5 px-3">
           <p className="mb-1 px-3 text-[11px] uppercase tracking-wide text-emerald-300/70">
-            Kelas Anda
+            Kelas
           </p>
           {semesters.length > 0 ? (
             semesters.map((s) => {

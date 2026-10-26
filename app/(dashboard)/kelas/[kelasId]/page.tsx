@@ -29,10 +29,9 @@ export default async function KelasDetailPage({
   if (!kelasData) notFound();
   const kelas = kelasData as unknown as KelasDetail;
   const aktif = kelas.tahun_pelajaran.status === "aktif";
-  // Kelas bersama (dibuat admin, guru_id NULL) hanya-baca untuk guru: santri
-  // & rosternya dikelola admin, tapi absensi/tugas tetap bisa diisi.
-  const pemilik = (kelas as { guru_id?: string | null }).guru_id != null;
-  const dapatKelola = aktif && pemilik;
+  // Daftar santri adalah data bersama: guru mana pun boleh menambah,
+  // memperbaiki, atau menghapus santri — termasuk pada kelas buatan admin.
+  const dapatKelola = aktif;
 
   const siswaList = (siswaData ?? []) as Siswa[];
 

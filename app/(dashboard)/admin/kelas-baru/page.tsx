@@ -28,9 +28,9 @@ export default async function AdminKelasBaruPage() {
             Buat Kelas Bersama (Admin)
           </h1>
           <p className="text-sm text-slate-500">
-            Buat kelas, tahun pelajaran, semester, mata pelajaran & daftar
-            santri yang BERSAMA — bisa dipakai semua guru. Guru tetap bisa
-            membuat datanya sendiri.
+            Siapkan tahun pelajaran, kelas, mata pelajaran & daftar santri yang
+            langsung dipakai semua guru. Bila admin belum membuatnya, guru juga
+            bisa membuat sendiri dan hasilnya tetap terpakai bersama.
           </p>
         </div>
         <Link href="/admin" className="btn-secondary">

@@ -13,9 +13,7 @@ async function getUserId() {
   return { supabase, userId: user?.id ?? null };
 }
 
-export async function createTahun(
-  input: unknown & { bersama?: boolean },
-): Promise<ActionResult> {
+export async function createTahun(input: unknown): Promise<ActionResult> {
   const parsed = tahunSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0].message };
@@ -24,22 +22,21 @@ export async function createTahun(
   if (!userId)
     return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
 
-  // Admin boleh membuat tahun BERSAMA (guru_id null) yang dipakai semua guru.
-  let bersama = false;
-  if (input.bersama) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .single();
-    bersama = (profile as { role?: string } | null)?.role === "admin";
-  }
+  // Satu tahun aktif untuk seluruh madrasah: admin membuatnya sebagai data
+  // bersama (guru_id NULL), guru membuatnya sebagai miliknya bila admin belum
+  // membuat — keduanya langsung terlihat & dipakai semua guru.
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .single();
+  const isAdmin = (profile as { role?: string } | null)?.role === "admin";
 
   // Tanggal semester otomatis dari nama tahun:
   // Ganjil 1 Juli–31 Des (tahun pertama), Genap 1 Jan–30 Jun (tahun kedua).
   const [awal, akhir] = parsed.data.nama.split("/").map(Number);
   const row = {
     nama: parsed.data.nama,
-    guru_id: bersama ? null : userId,
+    guru_id: isAdmin ? null : userId,
     tgl_mulai: `${awal}-07-01`,
     batas_semester: `${awal}-12-31`,
     tgl_selesai: `${akhir}-06-30`,
@@ -48,17 +45,11 @@ export async function createTahun(
   const { error } = await supabase.from("tahun_pelajaran").insert(row);
 
   if (error) {
-    if (error.message.includes("one_active_year_per_guru")) {
+    if (error.message.includes("satu_tahun_aktif_global")) {
       return {
         ok: false,
         error:
-          "Masih ada tahun pelajaran aktif milik Anda. Arsipkan dulu sebelum membuat baru.",
-      };
-    }
-    if (error.message.includes("satu_tahun_aktif_bersama")) {
-      return {
-        ok: false,
-        error: "Sudah ada tahun BERSAMA yang aktif. Arsipkan dulu di menu Tahun Pelajaran.",
+          "Sudah ada tahun pelajaran aktif. Arsipkan dulu di menu Tahun Pelajaran sebelum membuat yang baru.",
       };
     }
     if (error.message.includes("tahun_bersama_nama_unik")) {

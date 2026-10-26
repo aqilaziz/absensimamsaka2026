@@ -5,13 +5,7 @@ import { useRouter } from "next/navigation";
 import { createTahun, updateTahun } from "./actions";
 import type { TahunPelajaran } from "@/lib/types";
 
-export function TahunForm({
-  tahun,
-  isAdmin = false,
-}: {
-  tahun?: TahunPelajaran;
-  isAdmin?: boolean;
-}) {
+export function TahunForm({ tahun }: { tahun?: TahunPelajaran }) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -20,10 +14,7 @@ export function TahunForm({
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const input = {
-      nama: String(fd.get("nama")),
-      bersama: tahun ? false : isAdmin && fd.get("bersama") === "on",
-    };
+    const input = { nama: String(fd.get("nama")) };
     setError(null);
     startTransition(async () => {
       const res = tahun
@@ -77,22 +68,9 @@ export function TahunForm({
       </Field>
       <p className="text-xs text-slate-500">
         Semester Ganjil otomatis 1 Juli – 31 Desember, Semester Genap otomatis 1
-        Januari – 30 Juni.
+        Januari – 30 Juni. Tahun pelajaran berlaku untuk seluruh madrasah, jadi
+        semua guru langsung memakainya.
       </p>
-      {!tahun && isAdmin && (
-        <label className="flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2 ring-1 ring-amber-200">
-          <input
-            type="checkbox"
-            name="bersama"
-            defaultChecked
-            className="mt-0.5 h-4 w-4 accent-emerald-600"
-          />
-          <span className="text-xs text-amber-800">
-            <b>Buat sebagai tahun BERSAMA</b> — dipakai semua guru (tidak
-            menambah tahun milik pribadi admin).
-          </span>
-        </label>
-      )}
       {error && (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
           {error}

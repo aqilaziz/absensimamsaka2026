@@ -28,16 +28,9 @@ export default async function DashboardPage() {
   ]);
 
   const profil = profile as Profile | null;
-  // Admin dapat melihat beberapa tahun aktif sekaligus (milik tiap guru + tahun bersama).
-  // Prioritas: milik sendiri → tahun bersama (guru_id null) → baris pertama.
+  // Hanya ada satu tahun pelajaran aktif untuk seluruh madrasah.
   const aktif = (aktifList ?? []) as TahunPelajaran[];
-  const tahun =
-    aktif.find(
-      (t) => (t as { guru_id?: string | null }).guru_id === profil?.id,
-    ) ??
-    aktif.find((t) => (t as { guru_id?: string | null }).guru_id === null) ??
-    aktif[0] ??
-    null;
+  const tahun = aktif[0] ?? null;
 
   let kelasList: (Kelas & { mapel?: Pick<Mapel, "nama" | "warna"> | null })[] =
     [];
@@ -152,7 +145,7 @@ export default async function DashboardPage() {
 
       <div>
         <h2 className="mb-3 text-lg font-semibold text-slate-900">
-          Kelas Anda
+          Kelas
         </h2>
         {kelasList.length === 0 ? (
           <p className="rounded-xl bg-white p-6 text-sm text-slate-500 ring-1 ring-slate-200">
