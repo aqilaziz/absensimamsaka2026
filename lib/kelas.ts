@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { KelasAjar, KelasDetail, Mapel } from "./types";
+import { idPenggunaSekarang } from "./profil";
 
 /** Kolom kelas + relasi yang selalu dibutuhkan. Kelas tidak lagi punya
  *  mapel; mapel ditentukan lewat tabel pengampu (`kelas_ajar`). */
@@ -72,13 +73,14 @@ export function sebagaiKelasDetail(data: unknown): KelasDetail {
 export async function mapelSaya(
   supabase: SupabaseClient,
   kelasId: string,
+  guruId?: string | null,
 ): Promise<Mapel | null> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
+  // Pakai id dari cookie sesi (tanpa round-trip ke Auth). Bila pemanggil
+  // sudah punya id (mis. dari layout), kirimkan agar tidak ada query tambahan.
+  const uid = guruId ?? (await idPenggunaSekarang(supabase));
+  if (!uid) return null;
 
-  const { data } = await ambilPengampu(supabase, kelasId, user.id);
+  const { data } = await ambilPengampu(supabase, kelasId, uid);
   const daftar = (data ?? []) as unknown as { mapel?: Mapel | null }[];
   return daftar[0]?.mapel ?? null;
 }

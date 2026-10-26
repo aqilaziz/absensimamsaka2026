@@ -14,7 +14,8 @@ export default async function TugasListPage({
   const { kelasId } = await params;
   const supabase = await createClient();
 
-  const [{ data: kelasData }, { data: tugasData }] = await Promise.all([
+  const [{ data: kelasData }, { data: tugasData }, mapel] =
+    await Promise.all([
     supabase
       .from("kelas")
       .select(
@@ -27,11 +28,12 @@ export default async function TugasListPage({
       .select("*")
       .eq("kelas_id", kelasId)
       .order("tgl_diberikan", { ascending: false }),
+    mapelSaya(supabase, kelasId),
   ]);
 
   if (!kelasData) notFound();
   const kelas = kelasData as unknown as KelasDetail;
-  kelas.mapel = await mapelSaya(supabase, kelasId);
+  kelas.mapel = mapel;
   const aktif = kelas.tahun_pelajaran.status === "aktif";
 
   const tugasList = (tugasData ?? []) as RingkasanTugas[];

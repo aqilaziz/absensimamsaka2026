@@ -24,7 +24,8 @@ export default async function TugasDetailPage({
   const { kelasId, tugasId } = await params;
   const supabase = await createClient();
 
-  const [{ data: kelasData }, { data: tugasData }] = await Promise.all([
+  const [{ data: kelasData }, { data: tugasData }, mapel] =
+    await Promise.all([
     supabase
       .from("kelas")
       .select(
@@ -33,11 +34,12 @@ export default async function TugasDetailPage({
       .eq("id", kelasId)
       .maybeSingle(),
     supabase.from("tugas").select("*").eq("id", tugasId).maybeSingle(),
+    mapelSaya(supabase, kelasId),
   ]);
 
   if (!kelasData || !tugasData) notFound();
   const kelas = kelasData as unknown as KelasDetail;
-  kelas.mapel = await mapelSaya(supabase, kelasId);
+  kelas.mapel = mapel;
   const tugas = tugasData as Tugas;
 
   // Lampiran disimpan di bucket privat → buat tautan bertanda tangan (1 jam).

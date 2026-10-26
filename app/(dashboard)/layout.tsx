@@ -22,40 +22,45 @@ import {
 // Sidebar dimuat terpisah agar tidak memblokir render halaman.
 // Sebelumnya layout menunggu 4 query Supabase sebelum children bisa tampil,
 // sehingga setiap klik menu terasa menggantung.
-async function SidebarContent() {
+async function SidebarContent({ profil }: { profil: Profile | null }) {
   const supabase = await createClient();
-
-  const [profil, { data: aktifList }] = await Promise.all([
-    ambilProfilSendiri(supabase),
-    supabase.from("tahun_pelajaran").select("*").eq("status", "aktif"),
-  ]);
 
   const isAdmin = profil?.role === "admin";
   // Hanya ada satu tahun pelajaran aktif untuk seluruh madrasah.
+  const { data: aktifList } = await supabase
+    .from("tahun_pelajaran")
+    .select("*")
+    .eq("status", "aktif");
   const aktif = (aktifList ?? []) as TahunPelajaran[];
   const tahun = aktif[0] ?? null;
 
   let kelasList: KelasRingkas[] = [];
   let semesters: Semester[] = [];
   if (tahun) {
-    const { data: semData } = await supabase
-      .from("semester")
-      .select("*")
-      .eq("tahun_pelajaran_id", tahun.id)
-      .order("urutan");
-    semesters = (semData ?? []) as Semester[];
+    // Semester & daftar kelas dijalankan bersamaan — keduanya hanya butuh
+    // id tahun, jadi tidak perlu menunggu satu sama lain.
+    const kelasQuery = isAdmin
+      ? supabase
+          .from("kelas")
+          .select("id, nama, semester_id")
+          .eq("tahun_pelajaran_id", tahun.id)
+          .order("nama")
+      : profil?.id
+        ? // Guru hanya melihat kelas yang ia centang di halaman "Ambil Kelas".
+          ambilKelasSaya(supabase, profil.id, tahun.id)
+        : Promise.resolve([] as KelasRingkas[]);
 
-    if (isAdmin) {
-      const { data } = await supabase
-        .from("kelas")
-        .select("id, nama, semester_id")
+    const [semData, kelasData] = await Promise.all([
+      supabase
+        .from("semester")
+        .select("*")
         .eq("tahun_pelajaran_id", tahun.id)
-        .order("nama");
-      kelasList = (data ?? []) as KelasRingkas[];
-    } else if (profil?.id) {
-      // Guru hanya melihat kelas yang ia centang di halaman "Ambil Kelas".
-      kelasList = await ambilKelasSaya(supabase, profil.id, tahun.id);
-    }
+        .order("urutan"),
+      kelasQuery,
+    ]);
+
+    semesters = (semData.data ?? []) as Semester[];
+    kelasList = (kelasData ?? []) as KelasRingkas[];
   }
 
   const semesterBerjalan = tahun
@@ -225,17 +230,19 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Peran dibutuhkan topbar mobile (menu Ambil Kelas hanya untuk guru).
+  // Profil diambil SEKALI di sini lalu diteruskan ke sidebar — sebelumnya
+  // layout dan sidebar masing-masing memanggil getUser() + query profil,
+  // sehingga setiap navigasi membayar dua round-trip ekstra.
   const supabase = await createClient();
-  const profilRingkas = await ambilProfilSendiri(supabase);
-  const isAdmin = profilRingkas?.role === "admin";
+  const profil = await ambilProfilSendiri(supabase);
+  const isAdmin = profil?.role === "admin";
 
   return (
     <div className="flex min-h-screen">
       {/* Sidebar desktop — dimuat terpisah agar children tidak menunggu. */}
       <aside className="hidden w-64 shrink-0 flex-col overflow-y-auto bg-emerald-950 md:flex">
         <Suspense fallback={<SidebarSkeleton />}>
-          <SidebarContent />
+          <SidebarContent profil={profil} />
         </Suspense>
       </aside>
 

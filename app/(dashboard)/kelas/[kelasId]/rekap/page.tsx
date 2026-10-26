@@ -27,17 +27,21 @@ export default async function RekapPage({
 
   const supabase = await createClient();
 
-  const { data: kelasData } = await supabase
-    .from("kelas")
-    .select(
-      "*, tahun_pelajaran(*), semester:semester!kelas_semester_id_fkey(*)",
-    )
-    .eq("id", kelasId)
-    .maybeSingle();
+  // Kelas & mapel diambil bersamaan (satu gelombang), bukan berurutan.
+  const [{ data: kelasData }, mapel] = await Promise.all([
+    supabase
+      .from("kelas")
+      .select(
+        "*, tahun_pelajaran(*), semester:semester!kelas_semester_id_fkey(*)",
+      )
+      .eq("id", kelasId)
+      .maybeSingle(),
+    mapelSaya(supabase, kelasId),
+  ]);
 
   if (!kelasData) notFound();
   const kelas = kelasData as unknown as KelasDetail;
-  kelas.mapel = await mapelSaya(supabase, kelasId);
+  kelas.mapel = mapel;
 
   const rentang = hitungRentang(periode, nilai, kelas.tahun_pelajaran);
 

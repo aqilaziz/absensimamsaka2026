@@ -33,13 +33,15 @@ export default async function AbsensiPage({
 
   const supabase = await createClient();
 
-  // Semua query dijalankan bersamaan (kelas ikut Promise.all) agar satu round-trip saja.
+  // Semua query dijalankan bersamaan (kelas & mapel ikut Promise.all) agar
+  // tidak ada round-trip berurutan ke database.
   const [
     { data: kelasData },
     { data: siswaData },
     { data: absensiData },
     { data: riwayatData },
     { data: jurnalData },
+    mapel,
   ] = await Promise.all([
     supabase
       .from("kelas")
@@ -67,10 +69,11 @@ export default async function AbsensiPage({
       .eq("kelas_id", kelasId)
       .eq("tanggal", tanggal)
       .maybeSingle(),
+    mapelSaya(supabase, kelasId),
   ]);
   if (!kelasData) notFound();
   const kelas = kelasData as unknown as KelasDetail;
-  kelas.mapel = await mapelSaya(supabase, kelasId);
+  kelas.mapel = mapel;
   const aktif = kelas.tahun_pelajaran.status === "aktif";
 
   const siswaList = (siswaData ?? []) as Siswa[];
