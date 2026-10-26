@@ -249,7 +249,7 @@ export default async function KelasPage({
                       klik di mana pun membuka detail kelas. Tombol Edit/Hapus
                       di bawahnya diberi `relative z-10`. */}
                   <Link
-                    href={`/kelas/${k.id}`}
+                    href={`/kelas/${k.id}/absensi`}
                     className="break-words text-base font-semibold text-slate-900 after:absolute after:inset-0 after:rounded-xl hover:text-emerald-700"
                   >
                     {k.nama}

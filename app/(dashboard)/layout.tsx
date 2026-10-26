@@ -155,7 +155,7 @@ async function SidebarContent() {
                   </p>
                   <div className="space-y-1">
                     {items.map((k) => (
-                      <NavLink key={k.id} href={`/kelas/${k.id}`}>
+                      <NavLink key={k.id} href={`/kelas/${k.id}/absensi`}>
                         <span className="flex items-center gap-2 truncate">
                           <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500/60" />
                           <span className="truncate">{k.nama}</span>
@@ -169,7 +169,7 @@ async function SidebarContent() {
           ) : (
             <div className="space-y-1">
               {kelasList.map((k) => (
-                <NavLink key={k.id} href={`/kelas/${k.id}`}>
+                <NavLink key={k.id} href={`/kelas/${k.id}/absensi`}>
                   <span className="flex items-center gap-2 truncate">
                     <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500/60" />
                     <span className="truncate">{k.nama}</span>

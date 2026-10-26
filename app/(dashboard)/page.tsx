@@ -184,7 +184,7 @@ export default async function DashboardPage() {
                       klik di mana pun membuka detail kelas. Elemen interaktif
                       lain di dalam kartu perlu `relative z-10`. */}
                   <Link
-                    href={`/kelas/${k.id}`}
+                    href={`/kelas/${k.id}/absensi`}
                     className="text-base font-semibold text-slate-900 after:absolute after:inset-0 after:rounded-xl hover:text-emerald-700"
                   >
                     {k.nama}
