@@ -60,7 +60,7 @@ export default async function AmbilKelasPage() {
   const jumlahSaya = pengampu.filter((p) => p.guru_id === uid).length;
 
   return (
-    <div className="max-w-4xl space-y-6">
+    <div className="max-w-5xl space-y-5">
       <div>
         <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">
           Ambil Kelas

@@ -95,9 +95,9 @@ export function AmbilKelasGrid({
   }
 
   return (
-    <div className="space-y-2">
+    <div className="grid gap-2 md:grid-cols-2">
       {error && (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 md:col-span-2">
           {error}
         </p>
       )}
@@ -110,45 +110,51 @@ export function AmbilKelasGrid({
         return (
           <div
             key={k.id}
-            className="flex flex-wrap items-center gap-2 rounded-xl bg-white px-4 py-2.5 shadow-sm ring-1 ring-slate-200"
+            className="flex flex-col gap-2 rounded-xl bg-white px-3.5 py-3 shadow-sm ring-1 ring-slate-200"
           >
-            <span className="text-sm font-semibold text-slate-900">
-              {k.nama}
-            </span>
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
-              {k.semester}
-            </span>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-sm font-semibold text-slate-900">
+                {k.nama}
+              </span>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+                {k.semester}
+              </span>
+            </div>
 
-            {milikSaya.map((p) => {
-              const m = mapelById.get(p.mapel_id);
-              if (!m) return null;
-              return (
-                <span
-                  key={p.id}
-                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${temaMapel(m.warna).badge}`}
-                >
-                  {m.nama}
-                  <button
-                    type="button"
-                    disabled={pending}
-                    onClick={() => lepas(p.id, m.nama)}
-                    title="Lepas mapel ini"
-                    className="rounded-full p-0.5 transition hover:bg-white/60 disabled:opacity-50"
-                  >
-                    <X size={12} />
-                  </button>
-                </span>
-              );
-            })}
+            {milikSaya.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {milikSaya.map((p) => {
+                  const m = mapelById.get(p.mapel_id);
+                  if (!m) return null;
+                  return (
+                    <span
+                      key={p.id}
+                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${temaMapel(m.warna).badge}`}
+                    >
+                      {m.nama}
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => lepas(p.id, m.nama)}
+                        title="Lepas mapel ini"
+                        className="rounded-full p-0.5 transition hover:bg-white/60 disabled:opacity-50"
+                      >
+                        <X size={12} />
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
 
             {tersedia.length > 0 && (
-              <div className="ml-auto flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5">
                 <select
                   value={pilihan[k.id] ?? ""}
                   onChange={(e) =>
                     setPilihan((p) => ({ ...p, [k.id]: e.target.value }))
                   }
-                  className="input w-40 py-1 text-sm sm:w-52"
+                  className="input min-w-0 flex-1 py-1 text-sm"
                 >
                   <option value="" disabled>
                     — pilih mapel —
@@ -163,7 +169,7 @@ export function AmbilKelasGrid({
                   type="button"
                   disabled={pending || !pilihan[k.id]}
                   onClick={() => simpanAmbil(k.id)}
-                  className="btn-primary py-1 text-sm disabled:opacity-50"
+                  className="btn-primary shrink-0 py-1 text-sm disabled:opacity-50"
                 >
                   Ambil
                 </button>
