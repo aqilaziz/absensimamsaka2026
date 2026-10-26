@@ -27,6 +27,13 @@ export function JurnalForm({
   aktif: boolean;
 }) {
   const sudahAda = Boolean(existing);
+  // Tombol hapus hanya untuk catatan jurnal — sesi (judul & jam) tetap.
+  const adaCatatan = Boolean(
+    existing?.topik ||
+      existing?.materi ||
+      existing?.kegiatan ||
+      existing?.catatan,
+  );
   // Form sesi selalu terbuka: judul & jam pelajaran adalah bagian dari
   // sesi absensi, bukan catatan opsional.
   const [buka, setBuka] = useState(true);
@@ -71,7 +78,7 @@ export function JurnalForm({
 
   async function onHapus() {
     const yakin = await konfirmasiHapus({
-      teks: "Hapus jurnal untuk tanggal ini?",
+      teks: "Hapus catatan jurnal (topik, materi, metode, refleksi)? Judul pertemuan, jam pelajaran, dan absensi santri tetap tersimpan.",
     });
     if (!yakin) return;
     setPesan(null);
@@ -81,7 +88,7 @@ export function JurnalForm({
         setPesan({ ok: false, teks: res.error ?? "Gagal menghapus jurnal" });
         return;
       }
-      setPesan({ ok: true, teks: "Jurnal dihapus." });
+      setPesan({ ok: true, teks: "Catatan jurnal dikosongkan." });
       router.refresh();
     });
   }
@@ -230,7 +237,7 @@ export function JurnalForm({
               <button type="submit" disabled={pending} className="btn-primary">
                 {pending ? "Menyimpan..." : "Simpan Jurnal"}
               </button>
-              {sudahAda && (
+              {adaCatatan && (
                 <button
                   type="button"
                   onClick={onHapus}

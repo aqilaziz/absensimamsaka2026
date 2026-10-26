@@ -91,6 +91,13 @@ export async function simpanJurnal(input: unknown): Promise<ActionResult> {
   return { ok: true };
 }
 
+/**
+ * Kosongkan catatan jurnal (topik, materi, metode, refleksi) untuk satu
+ * kelas & tanggal.
+ *
+ * Barisnya TIDAK dihapus: judul pertemuan dan jam pelajaran tetap tersimpan,
+ * dan absensi santri sama sekali tidak tersentuh (tabel berbeda).
+ */
 export async function hapusJurnal(input: unknown): Promise<ActionResult> {
   const parsed = hapusJurnalSchema.safeParse(input);
   if (!parsed.success) {
@@ -107,9 +114,10 @@ export async function hapusJurnal(input: unknown): Promise<ActionResult> {
 
   const { error } = await supabase
     .from("jurnal")
-    .delete()
+    .update({ topik: null, materi: null, kegiatan: null, catatan: null })
     .eq("kelas_id", kelas_id)
-    .eq("tanggal", tanggal);
+    .eq("tanggal", tanggal)
+    .eq("guru_id", user.id);
 
   if (error) return { ok: false, error: error.message };
 
