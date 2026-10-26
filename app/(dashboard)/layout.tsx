@@ -234,7 +234,7 @@ async function TopbarMobile() {
   const isAdmin = profil?.role === "admin";
 
   return (
-    <header className="no-scrollbar sticky top-0 z-20 flex items-center gap-3 overflow-x-auto bg-emerald-950 px-4 py-3 md:hidden">
+    <header className="sticky top-0 z-20 flex items-center gap-2 bg-emerald-950 px-3 py-2.5 md:hidden">
       <div className="flex shrink-0 items-center gap-2">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -244,9 +244,12 @@ async function TopbarMobile() {
           height={28}
           className="h-7 w-7 rounded-full bg-white object-contain p-0.5"
         />
-        <span className="font-bold leading-tight text-white">MAM 1 Paciran</span>
+        <span className="hidden font-bold leading-tight text-white min-[380px]:inline">
+          MAM 1
+        </span>
       </div>
-      <nav className="flex shrink-0 items-center gap-1 text-sm">
+      {/* Menu bisa digeser, tombol Keluar tetap menempel di kanan. */}
+      <nav className="no-scrollbar flex min-w-0 flex-1 items-center gap-1 overflow-x-auto text-sm">
         <NavLink href="/" exact>
           Dashboard
         </NavLink>
@@ -257,15 +260,15 @@ async function TopbarMobile() {
         <NavLink href="/cari-santri">Cari</NavLink>
         <NavLink href="/arsip">Arsip</NavLink>
         <NavLink href="/akun">Akun</NavLink>
-        <form action={logout} className="shrink-0 pl-1">
-          <button
-            type="submit"
-            className="rounded-md bg-red-600 px-2.5 py-1 text-xs font-semibold text-white transition hover:bg-red-700"
-          >
-            Keluar
-          </button>
-        </form>
       </nav>
+      <form action={logout} className="shrink-0">
+        <button
+          type="submit"
+          className="rounded-md bg-red-600 px-2.5 py-1.5 text-xs font-semibold text-white transition hover:bg-red-700"
+        >
+          Keluar
+        </button>
+      </form>
     </header>
   );
 }

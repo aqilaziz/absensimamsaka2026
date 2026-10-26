@@ -215,7 +215,104 @@ export function AbsensiGrid({
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
+      {/* ===== Tampilan HP: satu kartu per santri (tanpa geser ke samping) ===== */}
+      <div className="space-y-2 sm:hidden">
+        {siswaList.map((s, i) => {
+          const st = state[s.id];
+          const butuhKeterangan =
+            st.status === "sakit" || st.status === "izin";
+          const prev = sebelumnya.get(s.id);
+          return (
+            <div
+              key={s.id}
+              className="rounded-xl bg-white p-3 shadow-sm ring-1 ring-slate-200"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-[11px] leading-none text-slate-400">
+                    {i + 1}
+                  </p>
+                  <p className="mt-1 text-sm font-medium leading-snug">
+                    <NamaSantriLink id={s.id} nama={s.nama} />
+                  </p>
+                  {prev && prev.status !== "hadir" && (
+                    <p className="mt-1 flex max-w-full items-center gap-1 text-[11px] text-slate-500">
+                      <span
+                        className={`h-1.5 w-1.5 shrink-0 rounded-full ${TITIK_STATUS[prev.status]}`}
+                      />
+                      <span className="shrink-0 font-medium">
+                        {LABEL_STATUS[prev.status]}
+                      </span>
+                      <span className="shrink-0 text-slate-400">
+                        {format(new Date(prev.tanggal + "T00:00:00"), "d MMM", {
+                          locale: localeId,
+                        })}
+                      </span>
+                      {prev.keterangan && (
+                        <span className="truncate" title={prev.keterangan}>
+                          · {prev.keterangan}
+                        </span>
+                      )}
+                    </p>
+                  )}
+                </div>
+                {prev && (
+                  <button
+                    type="button"
+                    disabled={!aktif}
+                    onClick={() => salinSebelum(s.id)}
+                    title={`Salin dari pertemuan lalu (${LABEL_STATUS[prev.status]}${
+                      prev.keterangan ? ` — ${prev.keterangan}` : ""
+                    })`}
+                    aria-label={`Salin status ${s.nama} dari pertemuan lalu`}
+                    className="shrink-0 rounded-lg border border-slate-200 p-2 text-slate-500 transition active:bg-emerald-50 active:text-emerald-700 disabled:opacity-40"
+                  >
+                    <Copy size={15} />
+                  </button>
+                )}
+              </div>
+
+              <div className="mt-2 grid grid-cols-4 gap-1.5">
+                {STATUS_LIST.map((opt) => {
+                  const selected = st.status === opt.key;
+                  return (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      disabled={!aktif}
+                      onClick={() => setStatus(s.id, opt.key)}
+                      className={`rounded-lg border px-1 py-2 text-xs font-semibold transition disabled:cursor-not-allowed ${
+                        selected
+                          ? opt.aktifClass
+                          : "border-slate-300 text-slate-500 active:bg-slate-50"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {butuhKeterangan && (
+                <input
+                  value={st.keterangan}
+                  disabled={!aktif}
+                  onChange={(e) => setKeterangan(s.id, e.target.value)}
+                  placeholder="Keterangan (mis. Kegiatan HW)"
+                  className={`input mt-2 py-2 text-sm ${
+                    st.keterangan.trim() === ""
+                      ? "border-amber-400 bg-amber-50"
+                      : ""
+                  }`}
+                />
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ===== Tampilan tablet/desktop: tabel ===== */}
+      <div className="hidden overflow-x-auto rounded-xl bg-white shadow-sm ring-1 ring-slate-200 sm:block">
         <table className="w-full min-w-[640px]">
           <thead className="border-b border-slate-200 bg-slate-50">
             <tr>

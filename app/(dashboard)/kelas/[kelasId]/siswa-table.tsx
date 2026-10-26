@@ -77,7 +77,22 @@ export function SiswaTable({
           {bulkError && <p className="text-xs text-red-600">{bulkError}</p>}
         </div>
       )}
-      <div className="overflow-x-auto rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
+      {/* ===== Tampilan HP: daftar kartu ===== */}
+      <ul className="space-y-2 sm:hidden">
+        {siswaList.map((s, i) => (
+          <SiswaCard
+            key={s.id}
+            siswa={s}
+            no={i + 1}
+            aktif={aktif}
+            checked={terpilih.includes(s.id)}
+            onToggle={() => toggleSatu(s.id)}
+          />
+        ))}
+      </ul>
+
+      {/* ===== Tampilan tablet/desktop: tabel ===== */}
+      <div className="hidden overflow-x-auto rounded-xl bg-white shadow-sm ring-1 ring-slate-200 sm:block">
         <table className="w-full min-w-[480px]">
           <thead className="border-b border-slate-200 bg-slate-50">
             <tr>
@@ -116,19 +131,8 @@ export function SiswaTable({
   );
 }
 
-function SiswaRow({
-  siswa,
-  no,
-  aktif,
-  checked,
-  onToggle,
-}: {
-  siswa: Siswa;
-  no: number;
-  aktif: boolean;
-  checked: boolean;
-  onToggle: () => void;
-}) {
+/** Logika ubah/hapus satu santri, dipakai tabel (desktop) & kartu (HP). */
+function useSiswaAksi(siswa: Siswa) {
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -172,6 +176,25 @@ function SiswaRow({
       router.refresh();
     });
   }
+
+  return { editing, setEditing, error, pending, onSave, onDelete };
+}
+
+function SiswaRow({
+  siswa,
+  no,
+  aktif,
+  checked,
+  onToggle,
+}: {
+  siswa: Siswa;
+  no: number;
+  aktif: boolean;
+  checked: boolean;
+  onToggle: () => void;
+}) {
+  const { editing, setEditing, error, pending, onSave, onDelete } =
+    useSiswaAksi(siswa);
 
   if (editing) {
     return (
@@ -256,5 +279,106 @@ function SiswaRow({
         </td>
       )}
     </tr>
+  );
+}
+
+/** Kartu santri untuk layar HP (tanpa tabel yang harus digeser). */
+function SiswaCard({
+  siswa,
+  no,
+  aktif,
+  checked,
+  onToggle,
+}: {
+  siswa: Siswa;
+  no: number;
+  aktif: boolean;
+  checked: boolean;
+  onToggle: () => void;
+}) {
+  const { editing, setEditing, error, pending, onSave, onDelete } =
+    useSiswaAksi(siswa);
+
+  if (editing) {
+    return (
+      <li className="rounded-xl bg-emerald-50/60 p-3 ring-1 ring-emerald-200">
+        <form onSubmit={onSave} className="space-y-2">
+          <input
+            name="nama"
+            defaultValue={siswa.nama}
+            required
+            className="input py-2 text-sm"
+          />
+          <input
+            name="nis"
+            defaultValue={siswa.nis ?? ""}
+            placeholder="NIS (opsional)"
+            className="input py-2 text-sm"
+          />
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              disabled={pending}
+              className="btn-primary flex-1 py-2 text-sm"
+            >
+              Simpan
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditing(false)}
+              className="btn-secondary flex-1 py-2 text-sm"
+            >
+              Batal
+            </button>
+          </div>
+          {error && <p className="text-xs text-red-600">{error}</p>}
+        </form>
+      </li>
+    );
+  }
+
+  return (
+    <li
+      className={`rounded-xl p-3 shadow-sm ring-1 ring-slate-200 ${
+        checked ? "bg-red-50/50" : "bg-white"
+      }`}
+    >
+      <div className="flex items-start gap-2">
+        {aktif && (
+          <input
+            type="checkbox"
+            checked={checked}
+            onChange={onToggle}
+            aria-label={`Pilih ${siswa.nama}`}
+            className="mt-1 h-5 w-5 shrink-0 accent-emerald-600"
+          />
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] leading-none text-slate-400">{no}</p>
+          <p className="mt-1 text-sm font-medium leading-snug">
+            <NamaSantriLink id={siswa.id} nama={siswa.nama} />
+          </p>
+          <p className="text-xs text-slate-500">NIS: {siswa.nis ?? "—"}</p>
+          {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+        </div>
+        {aktif && (
+          <div className="flex shrink-0 flex-col gap-1.5">
+            <button
+              onClick={() => setEditing(true)}
+              className="rounded-md border border-slate-300 px-2.5 py-1.5 text-xs text-slate-600 active:bg-slate-50"
+            >
+              Edit
+            </button>
+            <button
+              onClick={onDelete}
+              disabled={pending}
+              className="rounded-md border border-red-200 px-2.5 py-1.5 text-xs text-red-600 active:bg-red-50 disabled:opacity-50"
+            >
+              Hapus
+            </button>
+          </div>
+        )}
+      </div>
+    </li>
   );
 }

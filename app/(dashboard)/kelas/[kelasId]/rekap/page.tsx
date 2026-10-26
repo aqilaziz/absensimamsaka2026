@@ -5,6 +5,7 @@ import { KelasHeader } from "@/components/kelas-header";
 import { PeriodeSelector } from "@/components/periode-selector";
 import { ExportExcelButton } from "@/components/export-excel-button";
 import { ExportPdfButton } from "@/components/export-pdf-button";
+import { HintGeser } from "@/components/hint-geser";
 import { RekapAbsensiTable } from "./rekap-absensi-table";
 import { RekapTugasTable } from "./rekap-tugas-table";
 import { hitungRentang, type Periode } from "@/lib/periode";
@@ -206,6 +207,8 @@ export default async function RekapPage({
           />
         </div>
       </div>
+
+      <HintGeser />
 
       {tab === "absensi" ? (
         <RekapAbsensiTable rows={absensiRows} />

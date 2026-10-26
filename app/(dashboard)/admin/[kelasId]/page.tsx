@@ -6,6 +6,7 @@ import { RekapAbsensiTable } from "@/app/(dashboard)/kelas/[kelasId]/rekap/rekap
 import { RekapTugasTable } from "@/app/(dashboard)/kelas/[kelasId]/rekap/rekap-tugas-table";
 import { ExportExcelButton } from "@/components/export-excel-button";
 import { ExportPdfButton } from "@/components/export-pdf-button";
+import { HintGeser } from "@/components/hint-geser";
 import { labelSemester, hitungRentang, type Periode } from "@/lib/periode";
 import { temaMapel } from "@/lib/mapel";
 import type { KelasDetail, RekapAbsensiRow, RekapTugasRow } from "@/lib/types";
@@ -252,11 +253,48 @@ export default async function AdminKelasDetailPage({
           <span className={`h-3 w-3 rounded-full ${t.dot}`} />
           {kelas.nama}
         </h1>
-        <p className="text-sm text-slate-500">
-          Guru: <b>{guruNama}</b> · Tahun {kelas.tahun_pelajaran.nama} ·{" "}
-          {kelas.semester ? labelSemester(kelas.semester.nama) : "Semester"}{" "}
-          {kelas.mapel ? `· ${kelas.mapel.nama}` : ""}
-        </p>
+        <div className="text-sm text-slate-500">
+          <p className="flex flex-wrap items-baseline gap-x-1">
+            <span>
+              Guru:{" "}
+              <b className="text-slate-700">
+                {daftarPengampu.length === 0
+                  ? "Belum ada pengampu"
+                  : daftarPengampu
+                      .slice(0, 2)
+                      .map(
+                        (p) => `${p.guru?.nama ?? "-"} (${p.mapel?.nama ?? "-"})`,
+                      )
+                      .join(", ")}
+              </b>
+            </span>
+            {daftarPengampu.length > 2 && (
+              <span className="text-xs text-slate-400">
+                +{daftarPengampu.length - 2} guru lain
+              </span>
+            )}
+          </p>
+
+          {daftarPengampu.length > 2 && (
+            <details className="mt-1">
+              <summary className="cursor-pointer text-xs font-medium text-emerald-700 hover:underline">
+                Lihat semua {daftarPengampu.length} pengampu
+              </summary>
+              <ul className="mt-1 space-y-0.5 text-xs text-slate-500">
+                {daftarPengampu.map((p, i) => (
+                  <li key={i}>
+                    {p.guru?.nama ?? "-"} — {p.mapel?.nama ?? "-"}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+
+          <p className="mt-1">
+            Tahun {kelas.tahun_pelajaran.nama} ·{" "}
+            {kelas.semester ? labelSemester(kelas.semester.nama) : "Semester"}
+          </p>
+        </div>
       </div>
 
       {/* Tab absensi / tugas */}
@@ -350,6 +388,8 @@ export default async function AdminKelasDetailPage({
           />
         </div>
       </div>
+
+      <HintGeser />
 
       {tab === "absensi" ? (
         <RekapAbsensiTable rows={absensiRows} />
