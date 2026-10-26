@@ -2,6 +2,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import { ambilKelasSaya, type KelasRingkas } from "@/lib/kelas";
+import { ambilProfilSendiri } from "@/lib/profil";
 import { labelSemester, semesterAktifHariIni } from "@/lib/periode";
 import type {
   NamaSemester,
@@ -19,12 +20,10 @@ import {
 export default async function DashboardPage() {
   const supabase = await createClient();
 
-  const [{ data: profile }, { data: aktifList }] = await Promise.all([
-    supabase.from("profiles").select("*").single(),
+  const [profil, { data: aktifList }] = await Promise.all([
+    ambilProfilSendiri(supabase),
     supabase.from("tahun_pelajaran").select("*").eq("status", "aktif"),
   ]);
-
-  const profil = profile as Profile | null;
   const isAdmin = profil?.role === "admin";
   // Hanya ada satu tahun pelajaran aktif untuk seluruh madrasah.
   const aktif = (aktifList ?? []) as TahunPelajaran[];

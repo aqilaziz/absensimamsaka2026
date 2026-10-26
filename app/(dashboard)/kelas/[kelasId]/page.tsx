@@ -6,6 +6,7 @@ import { SiswaTable } from "./siswa-table";
 import { SalinSantriButton } from "./salin-santri-button";
 import { cariSemesterSumber } from "@/lib/santri";
 import { ambilKelasDetail, ambilPengampu } from "@/lib/kelas";
+import { ambilProfilSendiri } from "@/lib/profil";
 import type { KelasAjar, KelasDetail, Mapel, Profile, Siswa } from "@/lib/types";
 
 export default async function KelasDetailPage({
@@ -16,11 +17,7 @@ export default async function KelasDetailPage({
   const { kelasId } = await params;
   const supabase = await createClient();
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, role")
-    .single();
-  const profil = profile as Pick<Profile, "id" | "role"> | null;
+  const profil = await ambilProfilSendiri(supabase);
   const isAdmin = profil?.role === "admin";
 
   const [{ data: kelasData }, { data: siswaData }] = await Promise.all([

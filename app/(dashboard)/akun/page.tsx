@@ -7,7 +7,11 @@ export default async function AkunPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const { data } = await supabase.from("profiles").select("*").single();
+  const { data } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user?.id ?? "")
+    .maybeSingle();
   const profil = data as Profile | null;
 
   return (

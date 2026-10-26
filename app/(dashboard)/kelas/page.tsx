@@ -4,6 +4,7 @@ import { KelasForm } from "./kelas-form";
 import { KelasDeleteButton } from "./kelas-delete-button";
 import { MapelKelola } from "./mapel-kelola";
 import { MapelBadge } from "@/components/mapel-badge";
+import { ambilProfilSendiri } from "@/lib/profil";
 import {
   formatTanggal,
   labelSemester,
@@ -37,11 +38,7 @@ export default async function KelasPage({
   const sp = await searchParams;
   const supabase = await createClient();
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, role")
-    .single();
-  const profil = profile as Pick<Profile, "id" | "role"> | null;
+  const profil = await ambilProfilSendiri(supabase);
   const uid = profil?.id ?? null;
   const isAdmin = profil?.role === "admin";
 

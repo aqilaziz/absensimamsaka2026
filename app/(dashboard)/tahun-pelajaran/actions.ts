@@ -28,7 +28,8 @@ export async function createTahun(input: unknown): Promise<ActionResult> {
   const { data: profile } = await supabase
     .from("profiles")
     .select("role")
-    .single();
+    .eq("id", userId)
+    .maybeSingle();
   const isAdmin = (profile as { role?: string } | null)?.role === "admin";
   if (!isAdmin) {
     return {

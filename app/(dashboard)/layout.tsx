@@ -5,6 +5,7 @@ import { NavLink } from "@/components/nav-link";
 import { logout } from "./actions";
 import { labelSemester, semesterAktifHariIni } from "@/lib/periode";
 import { ambilKelasSaya, type KelasRingkas } from "@/lib/kelas";
+import { ambilProfilSendiri } from "@/lib/profil";
 import type { Profile, Semester, TahunPelajaran } from "@/lib/types";
 import {
   Archive,
@@ -24,12 +25,11 @@ import {
 async function SidebarContent() {
   const supabase = await createClient();
 
-  const [{ data: profile }, { data: aktifList }] = await Promise.all([
-    supabase.from("profiles").select("*").single(),
+  const [profil, { data: aktifList }] = await Promise.all([
+    ambilProfilSendiri(supabase),
     supabase.from("tahun_pelajaran").select("*").eq("status", "aktif"),
   ]);
 
-  const profil = profile as Profile | null;
   const isAdmin = profil?.role === "admin";
   // Hanya ada satu tahun pelajaran aktif untuk seluruh madrasah.
   const aktif = (aktifList ?? []) as TahunPelajaran[];
@@ -224,11 +224,8 @@ export default async function DashboardLayout({
 }) {
   // Peran dibutuhkan topbar mobile (menu Ambil Kelas hanya untuk guru).
   const supabase = await createClient();
-  const { data: profilRingkas } = await supabase
-    .from("profiles")
-    .select("role")
-    .single();
-  const isAdmin = (profilRingkas as { role?: string } | null)?.role === "admin";
+  const profilRingkas = await ambilProfilSendiri(supabase);
+  const isAdmin = profilRingkas?.role === "admin";
 
   return (
     <div className="flex min-h-screen">
