@@ -64,7 +64,7 @@ async function SidebarContent() {
 
   return (
     <>
-      <div className="flex items-center gap-3 px-5 py-5">
+      <div className="flex items-center gap-3 px-5 pb-3 pt-5">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/logomam1.png"
@@ -81,6 +81,24 @@ async function SidebarContent() {
             {profil?.nama ?? "Guru"}
           </p>
         </div>
+      </div>
+
+      {/* Akun & keluar di bagian atas supaya selalu terlihat tanpa menggulir. */}
+      <div className="flex items-center gap-2 px-4 pb-4">
+        <Link
+          href="/akun"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-emerald-900/70 px-2 py-1.5 text-xs font-medium text-emerald-100 transition hover:bg-emerald-800 hover:text-white"
+        >
+          <KeyRound size={13} /> Akun &amp; Sandi
+        </Link>
+        <form action={logout} className="flex-1">
+          <button
+            type="submit"
+            className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-red-600 px-2 py-1.5 text-xs font-semibold text-white transition hover:bg-red-700"
+          >
+            <LogOut size={13} /> Keluar
+          </button>
+        </form>
       </div>
 
       <div className="mx-4 rounded-lg bg-emerald-900/60 px-3 py-2">
@@ -183,22 +201,7 @@ async function SidebarContent() {
         </div>
       )}
 
-      <div className="mt-auto space-y-1 p-3">
-        <Link
-          href="/akun"
-          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-emerald-100/80 transition hover:bg-emerald-800/60 hover:text-white"
-        >
-          <KeyRound size={16} /> Akun &amp; Kata Sandi
-        </Link>
-        <form action={logout}>
-          <button
-            type="submit"
-            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-emerald-100/80 transition hover:bg-emerald-800/60 hover:text-white"
-          >
-            <LogOut size={16} /> Keluar
-          </button>
-        </form>
-      </div>
+      <div className="pb-4" />
     </>
   );
 }
@@ -263,6 +266,14 @@ export default async function DashboardLayout({
             <NavLink href="/cari-santri">Cari</NavLink>
             <NavLink href="/arsip">Arsip</NavLink>
             <NavLink href="/akun">Akun</NavLink>
+            <form action={logout} className="shrink-0 pl-1">
+              <button
+                type="submit"
+                className="rounded-md bg-red-600 px-2.5 py-1 text-xs font-semibold text-white transition hover:bg-red-700"
+              >
+                Keluar
+              </button>
+            </form>
           </nav>
         </header>
 
