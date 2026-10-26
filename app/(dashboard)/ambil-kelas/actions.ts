@@ -32,7 +32,7 @@ export async function ambilKelas(input: unknown): Promise<ActionResult> {
     if (error.code === "23505") {
       return {
         ok: false,
-        error: "Kelas ini sudah diambil untuk mapel tersebut",
+        error: "Anda sudah mengambil mapel ini di kelas tersebut",
       };
     }
     return { ok: false, error: error.message };
