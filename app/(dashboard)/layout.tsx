@@ -41,6 +41,8 @@ async function ambilDataSidebar(
   if (tahun) {
     // Semester & daftar kelas dijalankan bersamaan — keduanya hanya butuh
     // id tahun, jadi tidak perlu menunggu satu sama lain.
+    // Admin memakai respons PostgREST ({ data }), guru memakai array dari
+    // `ambilKelasSaya` — disamakan setelah await.
     const kelasQuery = isAdmin
       ? supabase
           .from("kelas")
@@ -62,7 +64,10 @@ async function ambilDataSidebar(
     ]);
 
     semesters = (semData.data ?? []) as Semester[];
-    kelasList = (kelasData ?? []) as KelasRingkas[];
+    kelasList = Array.isArray(kelasData)
+      ? (kelasData as KelasRingkas[])
+      : (((kelasData as { data?: KelasRingkas[] | null }).data ??
+          []) as KelasRingkas[]);
   }
 
   const semesterBerjalan = tahun
