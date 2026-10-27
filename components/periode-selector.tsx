@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 
-export type RekapTab = "absensi" | "tugas";
+export type RekapTab = "absensi" | "tugas" | "jurnal";
 export type RekapPeriode = "bulan" | "semester" | "tahun";
 
 export function PeriodeSelector({
@@ -51,6 +51,7 @@ export function PeriodeSelector({
           [
             { key: "absensi", label: "Absensi" },
             { key: "tugas", label: "Tugas" },
+            { key: "jurnal", label: "Jurnal" },
           ] as const
         ).map((t) => (
           <button

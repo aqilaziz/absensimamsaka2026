@@ -8,7 +8,12 @@ import { ExportPdfButton } from "@/components/export-pdf-button";
 import { HintGeser } from "@/components/hint-geser";
 import { RekapAbsensiTable } from "./rekap-absensi-table";
 import { RekapTugasTable } from "./rekap-tugas-table";
-import { hitungRentang, type Periode } from "@/lib/periode";
+import {
+  RekapJurnalTable,
+  labelJam,
+  type JurnalRekapRow,
+} from "./rekap-jurnal-table";
+import { formatTanggalPanjang, hitungRentang, type Periode } from "@/lib/periode";
 import type { KelasDetail, RekapAbsensiRow, RekapTugasRow } from "@/lib/types";
 
 export default async function RekapPage({
@@ -21,7 +26,8 @@ export default async function RekapPage({
   const { kelasId } = await params;
   const sp = await searchParams;
 
-  const tab = sp.tab === "tugas" ? "tugas" : "absensi";
+  const tab =
+    sp.tab === "tugas" ? "tugas" : sp.tab === "jurnal" ? "jurnal" : "absensi";
   const periode: Periode =
     sp.periode === "semester" || sp.periode === "tahun" ? sp.periode : "bulan";
   const nilai = sp.nilai;
@@ -48,6 +54,7 @@ export default async function RekapPage({
 
   let absensiRows: RekapAbsensiRow[] = [];
   let tugasRows: RekapTugasRow[] = [];
+  let jurnalRows: JurnalRekapRow[] = [];
 
   if (tab === "absensi") {
     const { data } = await supabase.rpc("rekap_absensi", {
@@ -56,14 +63,29 @@ export default async function RekapPage({
       p_sampai: rentang.sampai,
     });
     absensiRows = (data ?? []) as RekapAbsensiRow[];
-  } else {
+  } else if (tab === "tugas") {
     const { data } = await supabase.rpc("rekap_tugas_siswa", {
       p_kelas_id: kelasId,
       p_dari: rentang.dari,
       p_sampai: rentang.sampai,
     });
     tugasRows = (data ?? []) as RekapTugasRow[];
+  } else {
+    // Jurnal mengajar pada rentang periode (guru: miliknya sendiri, admin: semua).
+    const { data } = await supabase
+      .from("jurnal")
+      .select(
+        "id, tanggal, judul, jam_mulai, jam_selesai, topik, materi, kegiatan, catatan",
+      )
+      .eq("kelas_id", kelasId)
+      .gte("tanggal", rentang.dari)
+      .lte("tanggal", rentang.sampai)
+      .order("tanggal", { ascending: true });
+    jurnalRows = (data ?? []) as JurnalRekapRow[];
   }
+
+  const labelTab =
+    tab === "absensi" ? "Absensi" : tab === "tugas" ? "Tugas" : "Jurnal";
 
   const exportRows =
     tab === "absensi"
@@ -78,23 +100,36 @@ export default async function RekapPage({
           "Total Hari": r.total_hari,
           "% Hadir": r.persen_hadir,
         }))
-      : tugasRows.map((r, i) => ({
-          No: i + 1,
-          Nama: r.nama,
-          NIS: r.nis ?? "",
-          "Total Tugas": r.total_tugas,
-          Sudah: r.sudah,
-          Belum: r.belum,
-          Terlambat: r.terlambat,
-          "% Kumpul": r.persen_kumpul,
-          "Rata-rata Nilai": r.rata_nilai,
-        }));
+      : tab === "tugas"
+        ? tugasRows.map((r, i) => ({
+            No: i + 1,
+            Nama: r.nama,
+            NIS: r.nis ?? "",
+            "Total Tugas": r.total_tugas,
+            Sudah: r.sudah,
+            Belum: r.belum,
+            Terlambat: r.terlambat,
+            "% Kumpul": r.persen_kumpul,
+            "Rata-rata Nilai": r.rata_nilai,
+          }))
+        : jurnalRows.map((r, i) => ({
+            No: i + 1,
+            Tanggal: formatTanggalPanjang(r.tanggal),
+            "Jam ke": labelJam(r),
+            "Judul Pertemuan": r.judul ?? "",
+            Topik: r.topik ?? "",
+            "Materi / Sub-topik": r.materi ?? "",
+            Metode: r.kegiatan ?? "",
+            Catatan: r.catatan ?? "",
+          }));
 
   // Konfigurasi Export PDF
   const pdfHeaders =
     tab === "absensi"
       ? ["No", "Nama Santri", "NIS", "Hadir", "Sakit", "Izin", "Alpha", "Total", "% Hadir"]
-      : ["No", "Nama Santri", "NIS", "Total", "Sudah", "Belum", "Terlambat", "% Kumpul", "Rata-rata"];
+      : tab === "tugas"
+        ? ["No", "Nama Santri", "NIS", "Total", "Sudah", "Belum", "Terlambat", "% Kumpul", "Rata-rata"]
+        : ["No", "Tanggal", "Jam", "Judul Pertemuan", "Topik", "Materi / Sub-topik", "Metode", "Catatan"];
 
   const pdfBody =
     tab === "absensi"
@@ -109,17 +144,28 @@ export default async function RekapPage({
           r.total_hari,
           `${r.persen_hadir}%`,
         ])
-      : tugasRows.map((r, i) => [
-          i + 1,
-          r.nama,
-          r.nis ?? "-",
-          r.total_tugas,
-          r.sudah,
-          r.belum,
-          r.terlambat,
-          `${r.persen_kumpul}%`,
-          r.rata_nilai != null ? String(r.rata_nilai) : "—",
-        ]);
+      : tab === "tugas"
+        ? tugasRows.map((r, i) => [
+            i + 1,
+            r.nama,
+            r.nis ?? "-",
+            r.total_tugas,
+            r.sudah,
+            r.belum,
+            r.terlambat,
+            `${r.persen_kumpul}%`,
+            r.rata_nilai != null ? String(r.rata_nilai) : "—",
+          ])
+        : jurnalRows.map((r, i) => [
+            i + 1,
+            formatTanggalPanjang(r.tanggal),
+            labelJam(r),
+            r.judul ?? "-",
+            r.topik ?? "-",
+            r.materi ?? "-",
+            r.kegiatan ?? "-",
+            r.catatan ?? "-",
+          ]);
 
   // Rata-rata kelas untuk baris footer PDF
   let pdfFooters: (string | number)[] | undefined = undefined;
@@ -144,7 +190,10 @@ export default async function RekapPage({
     pdfFooters = ["", "Rata-rata Kelas", "", "", "", "", "", `${avgKumpul}%`, String(avgNilai)];
   }
 
-  const pdfColumnStyles =
+  const pdfColumnStyles: Record<
+    number,
+    { halign?: "left" | "center" | "right"; cellWidth?: number }
+  > =
     tab === "absensi"
       ? {
           0: { halign: "center" as const, cellWidth: 10 },
@@ -156,16 +205,27 @@ export default async function RekapPage({
           7: { halign: "center" as const, cellWidth: 18 },
           8: { halign: "center" as const, cellWidth: 20 },
         }
-      : {
-          0: { halign: "center" as const, cellWidth: 10 },
-          2: { halign: "center" as const, cellWidth: 22 },
-          3: { halign: "center" as const, cellWidth: 16 },
-          4: { halign: "center" as const, cellWidth: 16 },
-          5: { halign: "center" as const, cellWidth: 16 },
-          6: { halign: "center" as const, cellWidth: 20 },
-          7: { halign: "center" as const, cellWidth: 20 },
-          8: { halign: "center" as const, cellWidth: 22 },
-        };
+      : tab === "tugas"
+        ? {
+            0: { halign: "center" as const, cellWidth: 10 },
+            2: { halign: "center" as const, cellWidth: 22 },
+            3: { halign: "center" as const, cellWidth: 16 },
+            4: { halign: "center" as const, cellWidth: 16 },
+            5: { halign: "center" as const, cellWidth: 16 },
+            6: { halign: "center" as const, cellWidth: 20 },
+            7: { halign: "center" as const, cellWidth: 20 },
+            8: { halign: "center" as const, cellWidth: 22 },
+          }
+        : {
+            0: { halign: "center" as const, cellWidth: 10 },
+            1: { cellWidth: 34 },
+            2: { halign: "center" as const, cellWidth: 12 },
+            3: { cellWidth: 40 },
+            4: { cellWidth: 34 },
+            5: { cellWidth: 40 },
+            6: { cellWidth: 24 },
+            7: { cellWidth: 34 },
+          };
 
   return (
     <div className="space-y-6">
@@ -189,10 +249,10 @@ export default async function RekapPage({
           <ExportExcelButton
             rows={exportRows}
             filename={`rekap-${tab}-${kelas.nama.replace(/\s+/g, "-")}-${rentang.dari}_${rentang.sampai}.xlsx`}
-            sheetName={tab === "absensi" ? "Absensi" : "Tugas"}
+            sheetName={labelTab}
           />
           <ExportPdfButton
-            title={`Rekap ${tab === "absensi" ? "Absensi" : "Tugas"} - Kelas ${kelas.nama}`}
+            title={`Rekap ${labelTab} - Kelas ${kelas.nama}`}
             subtitle={kelas.tahun_pelajaran?.nama ? `Tahun Pelajaran: ${kelas.tahun_pelajaran.nama}` : undefined}
             info={[
               { label: "Kelas", value: kelas.nama },
@@ -204,6 +264,7 @@ export default async function RekapPage({
             footers={pdfFooters}
             filename={`rekap-${tab}-${kelas.nama.replace(/\s+/g, "-")}-${rentang.dari}_${rentang.sampai}.pdf`}
             columnStyles={pdfColumnStyles}
+            orientation={tab === "jurnal" ? "landscape" : "portrait"}
           />
         </div>
       </div>
@@ -212,8 +273,10 @@ export default async function RekapPage({
 
       {tab === "absensi" ? (
         <RekapAbsensiTable rows={absensiRows} />
-      ) : (
+      ) : tab === "tugas" ? (
         <RekapTugasTable rows={tugasRows} />
+      ) : (
+        <RekapJurnalTable rows={jurnalRows} />
       )}
     </div>
   );
