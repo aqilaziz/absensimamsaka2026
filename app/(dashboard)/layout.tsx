@@ -2,11 +2,12 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { NavLink } from "@/components/nav-link";
+import { MobileMenu } from "@/components/mobile-menu";
 import { logout } from "./actions";
 import { labelSemester, semesterAktifHariIni } from "@/lib/periode";
 import { ambilKelasSaya, type KelasRingkas } from "@/lib/kelas";
 import { ambilProfilSendiri } from "@/lib/profil";
-import type { Semester, TahunPelajaran } from "@/lib/types";
+import type { Profile, Semester, TahunPelajaran } from "@/lib/types";
 import {
   Archive,
   CalendarRange,
@@ -19,21 +20,21 @@ import {
   Users,
 } from "lucide-react";
 
-// Sidebar dimuat terpisah agar tidak memblokir render halaman.
-// Sebelumnya layout menunggu 4 query Supabase sebelum children bisa tampil,
-// sehingga setiap klik menu terasa menggantung.
-async function SidebarContent() {
-  const supabase = await createClient();
-  const profil = await ambilProfilSendiri(supabase);
-
+/**
+ * Data yang dipakai bersama sidebar desktop & menu burger HP: tahun aktif,
+ * daftar semester, dan kelas yang boleh dilihat pengguna.
+ */
+async function ambilDataSidebar(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  profil: Profile | null,
+) {
   const isAdmin = profil?.role === "admin";
   // Hanya ada satu tahun pelajaran aktif untuk seluruh madrasah.
   const { data: aktifList } = await supabase
     .from("tahun_pelajaran")
     .select("*")
     .eq("status", "aktif");
-  const aktif = (aktifList ?? []) as TahunPelajaran[];
-  const tahun = aktif[0] ?? null;
+  const tahun = ((aktifList ?? []) as TahunPelajaran[])[0] ?? null;
 
   let kelasList: KelasRingkas[] = [];
   let semesters: Semester[] = [];
@@ -67,6 +68,19 @@ async function SidebarContent() {
   const semesterBerjalan = tahun
     ? (semesters.find((s) => s.nama === semesterAktifHariIni(tahun)) ?? null)
     : null;
+
+  return { tahun, semesters, kelasList, semesterBerjalan };
+}
+
+// Sidebar dimuat terpisah agar tidak memblokir render halaman.
+// Sebelumnya layout menunggu 4 query Supabase sebelum children bisa tampil,
+// sehingga setiap klik menu terasa menggantung.
+async function SidebarContent() {
+  const supabase = await createClient();
+  const profil = await ambilProfilSendiri(supabase);
+  const isAdmin = profil?.role === "admin";
+  const { tahun, semesters, kelasList, semesterBerjalan } =
+    await ambilDataSidebar(supabase, profil);
 
   return (
     <>
@@ -232,43 +246,40 @@ async function TopbarMobile() {
   const supabase = await createClient();
   const profil = await ambilProfilSendiri(supabase);
   const isAdmin = profil?.role === "admin";
+  const { tahun, semesters, kelasList, semesterBerjalan } =
+    await ambilDataSidebar(supabase, profil);
 
   return (
-    <header className="sticky top-0 z-20 flex items-center gap-2 bg-emerald-950 px-3 py-2.5 md:hidden">
-      <div className="flex shrink-0 items-center gap-2">
+    <header className="sticky top-0 z-30 flex items-center justify-between gap-2 bg-emerald-950 px-3 py-2 md:hidden">
+      <div className="flex min-w-0 items-center gap-2">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/logomam1.png"
           alt="Logo MAM 1 Paciran"
           width={28}
           height={28}
-          className="h-7 w-7 rounded-full bg-white object-contain p-0.5"
+          className="h-7 w-7 shrink-0 rounded-full bg-white object-contain p-0.5"
         />
-        <span className="hidden font-bold leading-tight text-white min-[380px]:inline">
-          MAM 1
+        <span className="truncate font-bold leading-tight text-white">
+          MAM 1 Paciran
         </span>
       </div>
-      {/* Menu bisa digeser, tombol Keluar tetap menempel di kanan. */}
-      <nav className="no-scrollbar flex min-w-0 flex-1 items-center gap-1 overflow-x-auto text-sm">
-        <NavLink href="/" exact>
-          Dashboard
-        </NavLink>
-        <NavLink href="/kelas" exact>
-          Kelas
-        </NavLink>
-        {!isAdmin && <NavLink href="/ambil-kelas">Ambil</NavLink>}
-        <NavLink href="/cari-santri">Cari</NavLink>
-        <NavLink href="/arsip">Arsip</NavLink>
-        <NavLink href="/akun">Akun</NavLink>
-      </nav>
-      <form action={logout} className="shrink-0">
-        <button
-          type="submit"
-          className="rounded-md bg-red-600 px-2.5 py-1.5 text-xs font-semibold text-white transition hover:bg-red-700"
-        >
-          Keluar
-        </button>
-      </form>
+
+      <MobileMenu
+        nama={profil?.nama ?? "Guru"}
+        isAdmin={isAdmin}
+        tahunNama={tahun?.nama ?? null}
+        semesterLabel={
+          semesterBerjalan ? labelSemester(semesterBerjalan.nama) : null
+        }
+        semesters={semesters.map((sm) => ({ id: sm.id, nama: sm.nama }))}
+        kelas={kelasList.map((k) => ({
+          id: k.id,
+          nama: k.nama,
+          semester_id: k.semester_id,
+        }))}
+        logoutAction={logout}
+      />
     </header>
   );
 }
