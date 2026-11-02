@@ -150,22 +150,7 @@ export function AbsensiGrid({
   }
 
   function onSimpan() {
-    // Validasi keterangan wajib untuk sakit/izin
-    const kurang = siswaList.find((s) => {
-      const st = state[s.id];
-      return (
-        (st.status === "sakit" || st.status === "izin") &&
-        st.keterangan.trim().length === 0
-      );
-    });
-    if (kurang) {
-      setPesan({
-        ok: false,
-        teks: `Keterangan wajib diisi untuk ${kurang.nama} (sakit/izin).`,
-      });
-      return;
-    }
-
+    // Keterangan opsional — sakit/izin boleh disimpan tanpa alasan.
     startTransition(async () => {
       const res = await simpanAbsensi({
         kelas_id: kelasId,
@@ -298,12 +283,8 @@ export function AbsensiGrid({
                   value={st.keterangan}
                   disabled={!aktif}
                   onChange={(e) => setKeterangan(s.id, e.target.value)}
-                  placeholder="Keterangan (mis. Kegiatan HW)"
-                  className={`input mt-2 py-2 text-sm ${
-                    st.keterangan.trim() === ""
-                      ? "border-amber-400 bg-amber-50"
-                      : ""
-                  }`}
+                  placeholder="Keterangan (opsional)"
+                  className="input mt-2 py-2 text-sm"
                 />
               )}
             </div>
@@ -386,12 +367,8 @@ export function AbsensiGrid({
                         value={st.keterangan}
                         disabled={!aktif}
                         onChange={(e) => setKeterangan(s.id, e.target.value)}
-                        placeholder="Wajib diisi…"
-                        className={`input py-1.5 ${
-                          st.keterangan.trim() === ""
-                            ? "border-amber-400 bg-amber-50"
-                            : ""
-                        }`}
+                        placeholder="Keterangan (opsional)"
+                        className="input py-1.5"
                       />
                     ) : (
                       <span className="text-slate-300">—</span>

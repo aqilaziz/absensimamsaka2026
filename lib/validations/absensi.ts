@@ -1,15 +1,12 @@
 import { z } from "zod";
 
-export const absensiItemSchema = z
-  .object({
-    siswa_id: z.string().uuid(),
-    status: z.enum(["hadir", "sakit", "izin", "alpha"]),
-    keterangan: z.string().trim().max(200).optional(),
-  })
-  .refine(
-    (d) => !["sakit", "izin"].includes(d.status) || (d.keterangan?.length ?? 0) > 0,
-    { message: "Keterangan wajib diisi untuk Sakit/Izin", path: ["keterangan"] },
-  );
+// Keterangan bersifat opsional untuk semua status (sakit/izin tidak wajib
+// memberi alasan) — guru bisa menyimpan walau kolomnya dikosongkan.
+export const absensiItemSchema = z.object({
+  siswa_id: z.string().uuid(),
+  status: z.enum(["hadir", "sakit", "izin", "alpha"]),
+  keterangan: z.string().trim().max(200).optional(),
+});
 
 export const simpanAbsensiSchema = z.object({
   kelas_id: z.string().uuid(),
