@@ -189,6 +189,7 @@ export default async function AbsensiPage({
         {/* Sesi (judul + jam pelajaran) dan catatan jurnal diletakkan di atas
             daftar santri; tanggalnya mengikuti tanggal absensi yang dipilih. */}
         <JurnalForm
+          key={`jurnal-${mapelTerpilih.id}-${tanggal}`}
           kelasId={kelasId}
           mapelId={mapelTerpilih.id}
           tanggal={tanggal}
@@ -211,6 +212,7 @@ export default async function AbsensiPage({
         ) : (
           <div className="space-y-3">
             <AbsensiGrid
+              key={`absensi-${mapelTerpilih.id}-${tanggal}`}
               kelasId={kelasId}
               mapelId={mapelTerpilih.id}
               tanggal={tanggal}
