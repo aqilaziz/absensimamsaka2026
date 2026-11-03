@@ -127,6 +127,21 @@ export interface Absensi {
   updated_at: string;
 }
 
+export interface NilaiHarian {
+  id: string;
+  siswa_id: string;
+  kelas_id: string;
+  mapel_id: string;
+  guru_id: string;
+  tanggal: string;
+  /** Jenis penilaian: Harian, Kuis, Hafalan, Praktik, dll. */
+  jenis: string;
+  nilai: number;
+  catatan: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Jurnal {
   id: string;
   kelas_id: string;

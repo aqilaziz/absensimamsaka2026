@@ -13,6 +13,7 @@ import {
   labelJam,
   type JurnalRekapRow,
 } from "./rekap-jurnal-table";
+import { RekapNilaiTable, type RekapNilaiRow } from "./rekap-nilai-table";
 import { formatTanggalPanjang, hitungRentang, type Periode } from "@/lib/periode";
 import type { KelasDetail, RekapAbsensiRow, RekapTugasRow } from "@/lib/types";
 
@@ -27,7 +28,13 @@ export default async function RekapPage({
   const sp = await searchParams;
 
   const tab =
-    sp.tab === "tugas" ? "tugas" : sp.tab === "jurnal" ? "jurnal" : "absensi";
+    sp.tab === "tugas"
+      ? "tugas"
+      : sp.tab === "jurnal"
+        ? "jurnal"
+        : sp.tab === "nilai"
+          ? "nilai"
+          : "absensi";
   const periode: Periode =
     sp.periode === "semester" || sp.periode === "tahun" ? sp.periode : "bulan";
   const nilai = sp.nilai;
@@ -55,6 +62,7 @@ export default async function RekapPage({
   let absensiRows: RekapAbsensiRow[] = [];
   let tugasRows: RekapTugasRow[] = [];
   let jurnalRows: JurnalRekapRow[] = [];
+  let nilaiRows: RekapNilaiRow[] = [];
 
   if (tab === "absensi") {
     const { data } = await supabase.rpc("rekap_absensi", {
@@ -70,6 +78,48 @@ export default async function RekapPage({
       p_sampai: rentang.sampai,
     });
     tugasRows = (data ?? []) as RekapTugasRow[];
+  } else if (tab === "nilai") {
+    // Nilai harian pada rentang periode, diringkas per santri.
+    const [{ data: siswaData }, { data: nilaiData }] = await Promise.all([
+      supabase
+        .from("siswa")
+        .select("id, nama, nis, urutan")
+        .eq("kelas_id", kelasId)
+        .order("urutan"),
+      supabase
+        .from("nilai_harian")
+        .select("siswa_id, nilai")
+        .eq("kelas_id", kelasId)
+        .gte("tanggal", rentang.dari)
+        .lte("tanggal", rentang.sampai),
+    ]);
+
+    const perSiswa = new Map<string, number[]>();
+    for (const n of (nilaiData ?? []) as { siswa_id: string; nilai: number }[]) {
+      const arr = perSiswa.get(n.siswa_id) ?? [];
+      arr.push(Number(n.nilai));
+      perSiswa.set(n.siswa_id, arr);
+    }
+
+    nilaiRows = ((siswaData ?? []) as {
+      id: string;
+      nama: string;
+      nis: string | null;
+    }[]).map((s) => {
+      const arr = perSiswa.get(s.id) ?? [];
+      return {
+        siswa_id: s.id,
+        nama: s.nama,
+        nis: s.nis,
+        jumlah: arr.length,
+        rata:
+          arr.length > 0
+            ? Math.round((arr.reduce((a, b) => a + b, 0) / arr.length) * 10) / 10
+            : null,
+        tertinggi: arr.length > 0 ? Math.max(...arr) : null,
+        terendah: arr.length > 0 ? Math.min(...arr) : null,
+      };
+    });
   } else {
     // Jurnal mengajar pada rentang periode (guru: miliknya sendiri, admin: semua).
     const { data } = await supabase
@@ -85,7 +135,13 @@ export default async function RekapPage({
   }
 
   const labelTab =
-    tab === "absensi" ? "Absensi" : tab === "tugas" ? "Tugas" : "Jurnal";
+    tab === "absensi"
+      ? "Absensi"
+      : tab === "tugas"
+        ? "Tugas"
+        : tab === "nilai"
+          ? "Nilai"
+          : "Jurnal";
 
   const exportRows =
     tab === "absensi"
@@ -112,7 +168,17 @@ export default async function RekapPage({
             "% Kumpul": r.persen_kumpul,
             "Rata-rata Nilai": r.rata_nilai,
           }))
-        : jurnalRows.map((r, i) => ({
+        : tab === "nilai"
+          ? nilaiRows.map((r, i) => ({
+              No: i + 1,
+              Nama: r.nama,
+              NIS: r.nis ?? "",
+              "Jumlah Nilai": r.jumlah,
+              "Rata-rata": r.rata,
+              Tertinggi: r.tertinggi,
+              Terendah: r.terendah,
+            }))
+          : jurnalRows.map((r, i) => ({
             No: i + 1,
             Tanggal: formatTanggalPanjang(r.tanggal),
             "Jam ke": labelJam(r),
@@ -129,7 +195,9 @@ export default async function RekapPage({
       ? ["No", "Nama Santri", "NIS", "Hadir", "Sakit", "Izin", "Alpha", "Total", "% Hadir"]
       : tab === "tugas"
         ? ["No", "Nama Santri", "NIS", "Total", "Sudah", "Belum", "Terlambat", "% Kumpul", "Rata-rata"]
-        : ["No", "Tanggal", "Jam", "Judul Pertemuan", "Topik", "Materi / Sub-topik", "Metode", "Catatan"];
+        : tab === "nilai"
+          ? ["No", "Nama Santri", "NIS", "Jumlah Nilai", "Rata-rata", "Tertinggi", "Terendah"]
+          : ["No", "Tanggal", "Jam", "Judul Pertemuan", "Topik", "Materi / Sub-topik", "Metode", "Catatan"];
 
   const pdfBody =
     tab === "absensi"
@@ -156,7 +224,17 @@ export default async function RekapPage({
             `${r.persen_kumpul}%`,
             r.rata_nilai != null ? String(r.rata_nilai) : "—",
           ])
-        : jurnalRows.map((r, i) => [
+        : tab === "nilai"
+          ? nilaiRows.map((r, i) => [
+              i + 1,
+              r.nama,
+              r.nis ?? "-",
+              r.jumlah,
+              r.rata != null ? String(r.rata) : "—",
+              r.tertinggi != null ? String(r.tertinggi) : "—",
+              r.terendah != null ? String(r.terendah) : "—",
+            ])
+          : jurnalRows.map((r, i) => [
             i + 1,
             formatTanggalPanjang(r.tanggal),
             labelJam(r),
@@ -216,7 +294,16 @@ export default async function RekapPage({
             7: { halign: "center" as const, cellWidth: 20 },
             8: { halign: "center" as const, cellWidth: 22 },
           }
-        : {
+        : tab === "nilai"
+          ? {
+              0: { halign: "center" as const, cellWidth: 10 },
+              2: { halign: "center" as const, cellWidth: 22 },
+              3: { halign: "center" as const, cellWidth: 26 },
+              4: { halign: "center" as const, cellWidth: 24 },
+              5: { halign: "center" as const, cellWidth: 24 },
+              6: { halign: "center" as const, cellWidth: 24 },
+            }
+          : {
             0: { halign: "center" as const, cellWidth: 10 },
             1: { cellWidth: 34 },
             2: { halign: "center" as const, cellWidth: 12 },
@@ -275,6 +362,8 @@ export default async function RekapPage({
         <RekapAbsensiTable rows={absensiRows} />
       ) : tab === "tugas" ? (
         <RekapTugasTable rows={tugasRows} />
+      ) : tab === "nilai" ? (
+        <RekapNilaiTable rows={nilaiRows} />
       ) : (
         <RekapJurnalTable rows={jurnalRows} />
       )}

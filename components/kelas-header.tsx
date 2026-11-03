@@ -3,7 +3,7 @@ import { labelSemester } from "@/lib/periode";
 import { MapelBadge } from "@/components/mapel-badge";
 import type { KelasDetail } from "@/lib/types";
 
-type TabKey = "santri" | "absensi" | "tugas" | "rekap";
+type TabKey = "santri" | "absensi" | "nilai" | "tugas" | "rekap";
 
 export function KelasHeader({
   kelas,
@@ -14,6 +14,7 @@ export function KelasHeader({
 }) {
   const tabs: { key: TabKey; label: string; href: string }[] = [
     { key: "absensi", label: "Absensi", href: `/kelas/${kelas.id}/absensi` },
+    { key: "nilai", label: "Nilai", href: `/kelas/${kelas.id}/nilai` },
     { key: "tugas", label: "Tugas", href: `/kelas/${kelas.id}/tugas` },
     { key: "rekap", label: "Rekap", href: `/kelas/${kelas.id}/rekap` },
     { key: "santri", label: "Santri", href: `/kelas/${kelas.id}` },
