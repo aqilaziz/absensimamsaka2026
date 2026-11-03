@@ -2,11 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { format } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
-import { mapelSaya } from "@/lib/kelas";
+import { ambilPengampu } from "@/lib/kelas";
+import { ambilProfilSendiri } from "@/lib/profil";
 import { KelasHeader } from "@/components/kelas-header";
 import { AbsensiGrid } from "./absensi-grid";
 import { RiwayatAbsensi, type HariAbsensi } from "./riwayat-absensi";
 import { JurnalForm } from "./jurnal-form";
+import { PemilihMapel } from "./pemilih-mapel";
 import {
   SimpanSemuaProvider,
   TombolSimpanSemua,
@@ -16,6 +18,7 @@ import type {
   Absensi,
   Jurnal,
   KelasDetail,
+  Mapel,
   Siswa,
   StatusAbsensi,
 } from "@/lib/types";
@@ -26,69 +29,96 @@ export default async function AbsensiPage({
   searchParams,
 }: {
   params: Promise<{ kelasId: string }>;
-  searchParams: Promise<{ tanggal?: string }>;
+  searchParams: Promise<{ tanggal?: string; mapel?: string }>;
 }) {
   const { kelasId } = await params;
-  const { tanggal: tanggalParam } = await searchParams;
+  const { tanggal: tanggalParam, mapel: mapelParam } = await searchParams;
   const tanggal =
     tanggalParam && /^\d{4}-\d{2}-\d{2}$/.test(tanggalParam)
       ? tanggalParam
       : format(new Date(), "yyyy-MM-dd");
 
   const supabase = await createClient();
+  const profil = await ambilProfilSendiri(supabase);
+  const uid = profil?.id ?? null;
 
-  // Semua query dijalankan bersamaan (kelas & mapel ikut Promise.all) agar
-  // tidak ada round-trip berurutan ke database.
-  const [
-    { data: kelasData },
-    { data: siswaData },
-    { data: absensiData },
-    { data: riwayatData },
-    { data: jurnalData },
-    mapel,
-  ] = await Promise.all([
-    supabase
-      .from("kelas")
-      .select(
-        "*, tahun_pelajaran(*), semester:semester!kelas_semester_id_fkey(*)",
-      )
-      .eq("id", kelasId)
-      .maybeSingle(),
-    supabase.from("siswa").select("*").eq("kelas_id", kelasId).order("urutan"),
-    supabase
-      .from("absensi")
-      .select("*")
-      .eq("kelas_id", kelasId)
-      .eq("tanggal", tanggal),
-    // Riwayat: semua absensi kelas ini (untuk daftar tanggal, rekap singkat,
-    // dan status pertemuan sebelumnya per santri).
-    supabase
-      .from("absensi")
-      .select("tanggal, status, siswa_id, keterangan")
-      .eq("kelas_id", kelasId)
-      .order("tanggal", { ascending: false }),
-    // Jurnal mengajar untuk tanggal ini (opsional).
-    supabase
-      .from("jurnal")
-      .select("*")
-      .eq("kelas_id", kelasId)
-      .eq("tanggal", tanggal)
-      .maybeSingle(),
-    mapelSaya(supabase, kelasId),
-  ]);
+  // Kelas, santri, dan daftar pengampu diambil bersamaan.
+  const [{ data: kelasData }, { data: siswaData }, { data: pengampuData }] =
+    await Promise.all([
+      supabase
+        .from("kelas")
+        .select(
+          "*, tahun_pelajaran(*), semester:semester!kelas_semester_id_fkey(*)",
+        )
+        .eq("id", kelasId)
+        .maybeSingle(),
+      supabase.from("siswa").select("*").eq("kelas_id", kelasId).order("urutan"),
+      ambilPengampu(supabase, kelasId),
+    ]);
+
   if (!kelasData) notFound();
   const kelas = kelasData as unknown as KelasDetail;
-  kelas.mapel = mapel;
+
+  const semuaPengampu = (pengampuData ?? []) as unknown as {
+    guru_id: string | null;
+    mapel: Mapel | null;
+  }[];
+  const milikSaya = semuaPengampu.filter((p) => p.guru_id === uid && p.mapel);
+  // Guru memakai mapel yang ia ampu; admin boleh melihat semua mapel kelas.
+  const sumber = milikSaya.length > 0 ? milikSaya : semuaPengampu;
+  const mapelList: Mapel[] = [];
+  for (const p of sumber) {
+    if (p.mapel && !mapelList.some((m) => m.id === p.mapel!.id)) {
+      mapelList.push(p.mapel);
+    }
+  }
+  const mapelTerpilih =
+    mapelList.find((m) => m.id === mapelParam) ?? mapelList[0] ?? null;
+  kelas.mapel = milikSaya[0]?.mapel ?? mapelTerpilih;
+
   const aktif = kelas.tahun_pelajaran.status === "aktif";
-
   const siswaList = (siswaData ?? []) as Siswa[];
-  const absensiList = (absensiData ?? []) as Absensi[];
 
-  // Kelompokkan riwayat per tanggal.
-  const riwayat = (riwayatData ?? []) as Pick<
+  // Absensi, riwayat, dan jurnal dibatasi pada mapel sesi ini.
+  let absensiList: Absensi[] = [];
+  let riwayat: Pick<
     Absensi,
     "tanggal" | "status" | "siswa_id" | "keterangan"
-  >[];
+  >[] = [];
+  let jurnalData: Jurnal | null = null;
+
+  if (mapelTerpilih) {
+    const [a, r, j] = await Promise.all([
+      supabase
+        .from("absensi")
+        .select("*")
+        .eq("kelas_id", kelasId)
+        .eq("mapel_id", mapelTerpilih.id)
+        .eq("tanggal", tanggal),
+      // Riwayat mapel ini: daftar tanggal + status pertemuan sebelumnya.
+      supabase
+        .from("absensi")
+        .select("tanggal, status, siswa_id, keterangan")
+        .eq("kelas_id", kelasId)
+        .eq("mapel_id", mapelTerpilih.id)
+        .order("tanggal", { ascending: false }),
+      supabase
+        .from("jurnal")
+        .select("*")
+        .eq("kelas_id", kelasId)
+        .eq("mapel_id", mapelTerpilih.id)
+        .eq("tanggal", tanggal)
+        .maybeSingle(),
+    ]);
+    absensiList = (a.data ?? []) as Absensi[];
+    riwayat = (r.data ?? []) as Pick<
+      Absensi,
+      "tanggal" | "status" | "siswa_id" | "keterangan"
+    >[];
+    jurnalData = (j.data as Jurnal | null) ?? null;
+  }
+
+  // Kelompokkan riwayat per tanggal.
   const petaHari = new Map<string, HariAbsensi>();
   for (const a of riwayat) {
     const hari = petaHari.get(a.tanggal) ?? {
@@ -122,9 +152,18 @@ export default async function AbsensiPage({
         <PemilihTanggal
           kelasId={kelasId}
           tanggal={tanggal}
+          mapelId={mapelTerpilih?.id}
           min={kelas.semester?.tgl_mulai ?? kelas.tahun_pelajaran.tgl_mulai}
           max={kelas.semester?.tgl_selesai ?? kelas.tahun_pelajaran.tgl_selesai}
         />
+        {mapelTerpilih && (
+          <PemilihMapel
+            kelasId={kelasId}
+            tanggal={tanggal}
+            mapelId={mapelTerpilih.id}
+            mapelList={mapelList.map((m) => ({ id: m.id, nama: m.nama }))}
+          />
+        )}
       </div>
 
       {tanggal !== format(new Date(), "yyyy-MM-dd") && (
@@ -135,15 +174,25 @@ export default async function AbsensiPage({
         </p>
       )}
 
-      {/* Satu tombol menyimpan absensi + jurnal sekaligus (lihat
-          simpan-semua.tsx). Kedua komponen tetap terpisah. */}
+      {!mapelTerpilih ? (
+        <div className="card max-w-lg space-y-1 text-sm text-slate-600">
+          <p className="font-medium text-slate-900">
+            Belum ada mata pelajaran untuk sesi ini.
+          </p>
+          <p>
+            Anda belum mengambil kelas/mapel ini. Buka menu Ambil Kelas lalu
+            centang mapel yang Anda ampu.
+          </p>
+        </div>
+      ) : (
       <SimpanSemuaProvider>
         {/* Sesi (judul + jam pelajaran) dan catatan jurnal diletakkan di atas
             daftar santri; tanggalnya mengikuti tanggal absensi yang dipilih. */}
         <JurnalForm
           kelasId={kelasId}
+          mapelId={mapelTerpilih.id}
           tanggal={tanggal}
-          existing={(jurnalData as Jurnal | null) ?? null}
+          existing={jurnalData}
           aktif={aktif}
         />
 
@@ -163,6 +212,7 @@ export default async function AbsensiPage({
           <div className="space-y-3">
             <AbsensiGrid
               kelasId={kelasId}
+              mapelId={mapelTerpilih.id}
               tanggal={tanggal}
               siswaList={siswaList}
               existing={absensiList}
@@ -174,9 +224,11 @@ export default async function AbsensiPage({
           </div>
         )}
       </SimpanSemuaProvider>
+      )}
 
       <RiwayatAbsensi
         kelasId={kelasId}
+        mapelId={mapelTerpilih?.id}
         hariList={hariList}
         tanggalAktif={tanggal}
       />

@@ -22,11 +22,14 @@ function judulOtomatis(tanggal: string) {
 
 export function JurnalForm({
   kelasId,
+  mapelId,
   tanggal,
   existing,
   aktif,
 }: {
   kelasId: string;
+  /** Jurnal disimpan per mapel. */
+  mapelId: string;
   tanggal: string;
   existing: Jurnal | null;
   aktif: boolean;
@@ -70,6 +73,7 @@ export function JurnalForm({
 
     const res = await simpanJurnal({
       kelas_id: kelasId,
+      mapel_id: mapelId,
       tanggal,
       judul: teks("judul"),
       jam_mulai: angka("jam_mulai"),
@@ -107,7 +111,7 @@ export function JurnalForm({
     if (!yakin) return;
     setPesan(null);
     startTransition(async () => {
-      const res = await hapusJurnal({ kelas_id: kelasId, tanggal });
+      const res = await hapusJurnal({ kelas_id: kelasId, mapel_id: mapelId, tanggal });
       if (!res.ok) {
         setPesan({ ok: false, teks: res.error ?? "Gagal menghapus jurnal" });
         return;

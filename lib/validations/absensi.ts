@@ -10,6 +10,7 @@ export const absensiItemSchema = z.object({
 
 export const simpanAbsensiSchema = z.object({
   kelas_id: z.string().uuid(),
+  mapel_id: z.string().uuid(),
   tanggal: z.string().date(),
   items: z.array(absensiItemSchema).min(1),
 });
@@ -17,6 +18,7 @@ export const simpanAbsensiSchema = z.object({
 /** Hapus seluruh absensi satu kelas pada satu tanggal. */
 export const hapusAbsensiSchema = z.object({
   kelas_id: z.string().uuid(),
+  mapel_id: z.string().uuid(),
   tanggal: z.string().date(),
 });
 

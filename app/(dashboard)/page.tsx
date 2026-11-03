@@ -61,15 +61,17 @@ export default async function DashboardPage() {
 
     const kelasIds = kelasList.map((k) => k.id);
     if (kelasIds.length > 0) {
-      const [{ count: cSiswa }, { count: cAbsen }, { count: cTugas }] =
+      const [{ count: cSiswa }, { data: absenHariIni }, { count: cTugas }] =
         await Promise.all([
           supabase
             .from("siswa")
             .select("id", { count: "exact", head: true })
             .in("kelas_id", kelasIds),
+          // Absensi kini per mapel: satu santri bisa punya beberapa baris
+          // pada hari yang sama, jadi hitung santri unik.
           supabase
             .from("absensi")
-            .select("id", { count: "exact", head: true })
+            .select("siswa_id")
             .in("kelas_id", kelasIds)
             .eq("tanggal", format(new Date(), "yyyy-MM-dd")),
           supabase
@@ -78,7 +80,9 @@ export default async function DashboardPage() {
             .in("kelas_id", kelasIds),
         ]);
       jumlahSantri = cSiswa ?? 0;
-      absensiHariIni = cAbsen ?? 0;
+      absensiHariIni = new Set(
+        (absenHariIni ?? []).map((a) => (a as { siswa_id: string }).siswa_id),
+      ).size;
       jumlahTugas = cTugas ?? 0;
     }
   }

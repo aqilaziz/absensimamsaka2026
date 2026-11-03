@@ -17,19 +17,21 @@ export async function simpanAbsensi(input: unknown): Promise<ActionResult> {
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
 
-  const { kelas_id, tanggal, items } = parsed.data;
+  const { kelas_id, mapel_id, tanggal, items } = parsed.data;
 
   // Guru hanya boleh mengabsen kelas yang sudah ia ambil (menu Ambil Kelas).
   const { data: pengampu } = await supabase
     .from("kelas_ajar")
     .select("id")
     .eq("kelas_id", kelas_id)
+    .eq("mapel_id", mapel_id)
     .eq("guru_id", user.id)
     .limit(1);
   if (!pengampu || pengampu.length === 0) {
     return {
       ok: false,
-      error: "Anda belum mengambil kelas ini. Buka menu Ambil Kelas dulu.",
+      error:
+        "Anda belum mengambil mapel ini di kelas tersebut. Buka menu Ambil Kelas dulu.",
     };
   }
 
@@ -62,6 +64,7 @@ export async function simpanAbsensi(input: unknown): Promise<ActionResult> {
   const rows = items.map((i) => ({
     siswa_id: i.siswa_id,
     kelas_id,
+    mapel_id,
     guru_id: user.id,
     tanggal,
     status: i.status,
@@ -73,7 +76,7 @@ export async function simpanAbsensi(input: unknown): Promise<ActionResult> {
 
   const { error } = await supabase
     .from("absensi")
-    .upsert(rows, { onConflict: "siswa_id,tanggal,guru_id" });
+    .upsert(rows, { onConflict: "siswa_id,tanggal,guru_id,mapel_id" });
 
   if (error) return { ok: false, error: error.message };
 
@@ -100,7 +103,7 @@ export async function hapusAbsensi(input: unknown): Promise<ActionResult> {
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
 
-  const { kelas_id, tanggal } = parsed.data;
+  const { kelas_id, mapel_id, tanggal } = parsed.data;
 
   const { data: profil } = await supabase
     .from("profiles")
@@ -120,7 +123,8 @@ export async function hapusAbsensi(input: unknown): Promise<ActionResult> {
     if (!pengampu || pengampu.length === 0) {
       return {
         ok: false,
-        error: "Anda belum mengambil kelas ini. Buka menu Ambil Kelas dulu.",
+        error:
+        "Anda belum mengambil mapel ini di kelas tersebut. Buka menu Ambil Kelas dulu.",
       };
     }
   }

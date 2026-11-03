@@ -70,6 +70,7 @@ const STATUS_LIST: {
 
 export function AbsensiGrid({
   kelasId,
+  mapelId,
   tanggal,
   siswaList,
   existing,
@@ -78,6 +79,8 @@ export function AbsensiGrid({
   absensiSebelum,
 }: {
   kelasId: string;
+  /** Sesi absensi untuk mapel ini. */
+  mapelId: string;
   tanggal: string;
   siswaList: Siswa[];
   existing: Absensi[];
@@ -162,6 +165,7 @@ export function AbsensiGrid({
     // Keterangan opsional — sakit/izin boleh disimpan tanpa alasan.
     const res = await simpanAbsensi({
       kelas_id: kelasId,
+      mapel_id: mapelId,
       tanggal,
       items: siswaList.map((s) => ({
         siswa_id: s.id,
@@ -195,7 +199,7 @@ export function AbsensiGrid({
     if (!yakin) return;
 
     startTransition(async () => {
-      const res = await hapusAbsensi({ kelas_id: kelasId, tanggal });
+      const res = await hapusAbsensi({ kelas_id: kelasId, mapel_id: mapelId, tanggal });
       if (!res.ok) {
         setPesan({ ok: false, teks: res.error ?? "Gagal menghapus absensi" });
         return;

@@ -37,10 +37,13 @@ const LABEL: Record<StatusAbsensi, string> = {
  */
 export function RiwayatAbsensi({
   kelasId,
+  mapelId,
   hariList,
   tanggalAktif,
 }: {
   kelasId: string;
+  /** Mapel sesi aktif — dibawa saat membuka tanggal lain. */
+  mapelId?: string;
   hariList: HariAbsensi[];
   tanggalAktif: string;
 }) {
@@ -97,7 +100,7 @@ export function RiwayatAbsensi({
               return (
                 <li key={h.tanggal}>
                   <Link
-                    href={`/kelas/${kelasId}/absensi?tanggal=${h.tanggal}`}
+                    href={`/kelas/${kelasId}/absensi?tanggal=${h.tanggal}${mapelId ? `&mapel=${mapelId}` : ""}`}
                     aria-current={aktif ? "date" : undefined}
                     className={
                       "flex flex-col gap-2 rounded-lg px-3 py-2 transition sm:flex-row sm:flex-wrap sm:items-center sm:justify-between " +

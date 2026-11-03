@@ -22,6 +22,7 @@ export async function simpanJurnal(input: unknown): Promise<ActionResult> {
 
   const {
     kelas_id,
+    mapel_id,
     tanggal,
     judul,
     jam_mulai,
@@ -36,12 +37,14 @@ export async function simpanJurnal(input: unknown): Promise<ActionResult> {
     .from("kelas_ajar")
     .select("id")
     .eq("kelas_id", kelas_id)
+    .eq("mapel_id", mapel_id)
     .eq("guru_id", user.id)
     .limit(1);
   if (!pengampu || pengampu.length === 0) {
     return {
       ok: false,
-      error: "Anda belum mengambil kelas ini. Buka menu Ambil Kelas dulu.",
+      error:
+        "Anda belum mengambil mapel ini di kelas tersebut. Buka menu Ambil Kelas dulu.",
     };
   }
 
@@ -82,7 +85,7 @@ export async function simpanJurnal(input: unknown): Promise<ActionResult> {
       kegiatan: kegiatan || null,
       catatan: catatan || null,
     },
-    { onConflict: "kelas_id,tanggal,guru_id" },
+    { onConflict: "kelas_id,tanggal,guru_id,mapel_id" },
   );
 
   if (error) return { ok: false, error: error.message };
@@ -110,12 +113,13 @@ export async function hapusJurnal(input: unknown): Promise<ActionResult> {
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Sesi berakhir, silakan masuk ulang" };
 
-  const { kelas_id, tanggal } = parsed.data;
+  const { kelas_id, mapel_id, tanggal } = parsed.data;
 
   const { error } = await supabase
     .from("jurnal")
     .update({ topik: null, materi: null, kegiatan: null, catatan: null })
     .eq("kelas_id", kelas_id)
+    .eq("mapel_id", mapel_id)
     .eq("tanggal", tanggal)
     .eq("guru_id", user.id);
 

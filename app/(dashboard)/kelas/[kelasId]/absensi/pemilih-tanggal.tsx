@@ -14,11 +14,14 @@ import { InputTanggal } from "@/components/input-tanggal";
 export function PemilihTanggal({
   kelasId,
   tanggal,
+  mapelId,
   min,
   max,
 }: {
   kelasId: string;
   tanggal: string;
+  /** Mapel sesi aktif — ikut dibawa saat berpindah tanggal. */
+  mapelId?: string;
   min?: string;
   max?: string;
 }) {
@@ -35,7 +38,9 @@ export function PemilihTanggal({
     }
     setNilai(isoBaru);
     startTransition(() => {
-      router.push(`/kelas/${kelasId}/absensi?tanggal=${isoBaru}`);
+      const q = new URLSearchParams({ tanggal: isoBaru });
+      if (mapelId) q.set("mapel", mapelId);
+      router.push(`/kelas/${kelasId}/absensi?${q.toString()}`);
     });
   }
 

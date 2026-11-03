@@ -17,6 +17,7 @@ const jam = z.coerce
  */
 export const simpanJurnalSchema = z.object({
   kelas_id: z.string().uuid(),
+  mapel_id: z.string().uuid(),
   tanggal: z.string().date(),
   judul: z.string().trim().max(200).optional(),
   jam_mulai: jam,
@@ -29,6 +30,7 @@ export const simpanJurnalSchema = z.object({
 
 export const hapusJurnalSchema = z.object({
   kelas_id: z.string().uuid(),
+  mapel_id: z.string().uuid(),
   tanggal: z.string().date(),
 });
 
