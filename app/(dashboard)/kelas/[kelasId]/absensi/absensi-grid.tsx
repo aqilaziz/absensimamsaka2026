@@ -8,6 +8,11 @@ import { Copy } from "lucide-react";
 import { simpanAbsensi, hapusAbsensi } from "./actions";
 import { NamaSantriLink } from "@/components/nama-santri-link";
 import { konfirmasiHapus } from "@/lib/swal";
+import {
+  useDaftarSimpan,
+  useSimpanSemua,
+  type HasilSimpan,
+} from "./simpan-semua";
 import type { Absensi, Siswa, StatusAbsensi } from "@/lib/types";
 
 interface AbsenState {
@@ -149,26 +154,39 @@ export function AbsensiGrid({
     setPesan(null);
   }
 
-  function onSimpan() {
+  /**
+   * Menyimpan absensi saja. Dipakai tombol sendiri maupun tombol gabungan
+   * "Simpan Absensi & Jurnal" (lihat simpan-semua.tsx).
+   */
+  async function simpan(): Promise<HasilSimpan> {
     // Keterangan opsional — sakit/izin boleh disimpan tanpa alasan.
+    const res = await simpanAbsensi({
+      kelas_id: kelasId,
+      tanggal,
+      items: siswaList.map((s) => ({
+        siswa_id: s.id,
+        status: state[s.id].status,
+        keterangan: state[s.id].keterangan || undefined,
+      })),
+    });
+    if (!res.ok) {
+      setPesan({ ok: false, teks: res.error ?? "Gagal menyimpan" });
+      return { ok: false, error: res.error };
+    }
+    setPesan({ ok: true, teks: "Absensi tersimpan." });
+    return { ok: true };
+  }
+
+  function onSimpan() {
     startTransition(async () => {
-      const res = await simpanAbsensi({
-        kelas_id: kelasId,
-        tanggal,
-        items: siswaList.map((s) => ({
-          siswa_id: s.id,
-          status: state[s.id].status,
-          keterangan: state[s.id].keterangan || undefined,
-        })),
-      });
-      if (!res.ok) {
-        setPesan({ ok: false, teks: res.error ?? "Gagal menyimpan" });
-        return;
-      }
-      setPesan({ ok: true, teks: "Absensi tersimpan." });
-      router.refresh();
+      const res = await simpan();
+      if (res.ok) router.refresh();
     });
   }
+
+  // Bila halaman menyediakan tombol gabungan, tombol ini tidak ditampilkan.
+  const adaTombolGabungan = useSimpanSemua() !== null;
+  useDaftarSimpan("absensi", simpan);
 
   async function onHapus() {
     const yakin = await konfirmasiHapus({
@@ -401,13 +419,15 @@ export function AbsensiGrid({
 
       {aktif && siswaList.length > 0 && (
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
-          <button
-            onClick={onSimpan}
-            disabled={pending}
-            className="btn-primary w-full sm:w-auto"
-          >
-            {pending ? "Menyimpan…" : "Simpan Absensi"}
-          </button>
+          {!adaTombolGabungan && (
+            <button
+              onClick={onSimpan}
+              disabled={pending}
+              className="btn-primary w-full sm:w-auto"
+            >
+              {pending ? "Menyimpan…" : "Simpan Absensi"}
+            </button>
+          )}
           {existing.length > 0 && (
             <button
               onClick={onHapus}

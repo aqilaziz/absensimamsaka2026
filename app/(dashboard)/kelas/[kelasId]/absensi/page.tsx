@@ -7,6 +7,10 @@ import { KelasHeader } from "@/components/kelas-header";
 import { AbsensiGrid } from "./absensi-grid";
 import { RiwayatAbsensi, type HariAbsensi } from "./riwayat-absensi";
 import { JurnalForm } from "./jurnal-form";
+import {
+  SimpanSemuaProvider,
+  TombolSimpanSemua,
+} from "./simpan-semua";
 import { PemilihTanggal } from "./pemilih-tanggal";
 import type {
   Absensi,
@@ -131,38 +135,45 @@ export default async function AbsensiPage({
         </p>
       )}
 
-      {/* Sesi (judul + jam pelajaran) dan catatan jurnal diletakkan di atas
-          daftar santri; tanggalnya mengikuti tanggal absensi yang dipilih. */}
-      <JurnalForm
-        kelasId={kelasId}
-        tanggal={tanggal}
-        existing={(jurnalData as Jurnal | null) ?? null}
-        aktif={aktif}
-      />
-
-      {siswaList.length === 0 ? (
-        <p className="card text-sm text-slate-500">
-          Belum ada santri di kelas ini.{" "}
-          {aktif && (
-            <Link
-              href={`/kelas/${kelasId}/siswa/import`}
-              className="font-semibold text-emerald-700 hover:underline"
-            >
-              Impor dulu dari Excel
-            </Link>
-          )}
-        </p>
-      ) : (
-        <AbsensiGrid
+      {/* Satu tombol menyimpan absensi + jurnal sekaligus (lihat
+          simpan-semua.tsx). Kedua komponen tetap terpisah. */}
+      <SimpanSemuaProvider>
+        {/* Sesi (judul + jam pelajaran) dan catatan jurnal diletakkan di atas
+            daftar santri; tanggalnya mengikuti tanggal absensi yang dipilih. */}
+        <JurnalForm
           kelasId={kelasId}
           tanggal={tanggal}
-          siswaList={siswaList}
-          existing={absensiList}
+          existing={(jurnalData as Jurnal | null) ?? null}
           aktif={aktif}
-          tanggalSebelum={tanggalSebelum}
-          absensiSebelum={absensiSebelum}
         />
-      )}
+
+        {siswaList.length === 0 ? (
+          <p className="card text-sm text-slate-500">
+            Belum ada santri di kelas ini.{" "}
+            {aktif && (
+              <Link
+                href={`/kelas/${kelasId}/siswa/import`}
+                className="font-semibold text-emerald-700 hover:underline"
+              >
+                Impor dulu dari Excel
+              </Link>
+            )}
+          </p>
+        ) : (
+          <div className="space-y-3">
+            <AbsensiGrid
+              kelasId={kelasId}
+              tanggal={tanggal}
+              siswaList={siswaList}
+              existing={absensiList}
+              aktif={aktif}
+              tanggalSebelum={tanggalSebelum}
+              absensiSebelum={absensiSebelum}
+            />
+            <TombolSimpanSemua aktif={aktif} />
+          </div>
+        )}
+      </SimpanSemuaProvider>
 
       <RiwayatAbsensi
         kelasId={kelasId}

@@ -1,12 +1,17 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { BookOpen, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { hapusJurnal, simpanJurnal } from "./jurnal-actions";
 import { konfirmasiHapus } from "@/lib/swal";
+import {
+  useDaftarSimpan,
+  useSimpanSemua,
+  type HasilSimpan,
+} from "./simpan-semua";
 import type { Jurnal } from "@/lib/types";
 
 const JAM = [1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -44,17 +49,26 @@ export function JurnalForm({
   );
   const [pending, startTransition] = useTransition();
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
 
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
+  /**
+   * Menyimpan jurnal saja. Nilai dibaca langsung dari form (input tidak
+   * dikontrol) supaya tombol gabungan "Simpan Absensi & Jurnal" di luar
+   * komponen ini tetap bisa memicunya.
+   */
+  async function simpan(): Promise<HasilSimpan> {
+    const form = formRef.current;
+    // Bagian jurnal sedang dilipat → tidak ada isian yang perlu disimpan.
+    if (!form) return { ok: true };
+
+    const fd = new FormData(form);
     const teks = (k: string) => String(fd.get(k) ?? "").trim() || undefined;
     const angka = (k: string) => {
       const v = String(fd.get(k) ?? "").trim();
       return v === "" ? undefined : Number(v);
     };
 
-    const input = {
+    const res = await simpanJurnal({
       kelas_id: kelasId,
       tanggal,
       judul: teks("judul"),
@@ -64,19 +78,27 @@ export function JurnalForm({
       materi: teks("materi"),
       kegiatan: teks("kegiatan"),
       catatan: teks("catatan"),
-    };
+    });
 
+    if (!res.ok) {
+      setPesan({ ok: false, teks: res.error ?? "Gagal menyimpan jurnal" });
+      return { ok: false, error: res.error };
+    }
+    setPesan({ ok: true, teks: "Jurnal tersimpan." });
+    return { ok: true };
+  }
+
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
     setPesan(null);
     startTransition(async () => {
-      const res = await simpanJurnal(input);
-      if (!res.ok) {
-        setPesan({ ok: false, teks: res.error ?? "Gagal menyimpan jurnal" });
-        return;
-      }
-      setPesan({ ok: true, teks: "Jurnal tersimpan." });
-      router.refresh();
+      const res = await simpan();
+      if (res.ok) router.refresh();
     });
   }
+
+  const adaTombolGabungan = useSimpanSemua() !== null;
+  useDaftarSimpan("jurnal", simpan);
 
   async function onHapus() {
     const yakin = await konfirmasiHapus({
@@ -119,6 +141,7 @@ export function JurnalForm({
       {buka && (
         <form
           key={existing?.updated_at ?? "kosong"}
+          ref={formRef}
           onSubmit={onSubmit}
           className="space-y-4 border-t border-slate-100 px-4 py-4"
         >
@@ -254,7 +277,11 @@ export function JurnalForm({
 
           {aktif && (
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-              <button type="submit" disabled={pending} className="btn-primary">
+              <button
+                type="submit"
+                disabled={pending}
+                className={adaTombolGabungan ? "btn-secondary" : "btn-primary"}
+              >
                 {pending ? "Menyimpan..." : "Simpan Jurnal"}
               </button>
               {adaCatatan && (
