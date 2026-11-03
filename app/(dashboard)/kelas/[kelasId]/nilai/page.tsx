@@ -6,6 +6,7 @@ import { ambilProfilSendiri } from "@/lib/profil";
 import { KelasHeader } from "@/components/kelas-header";
 import { JENIS_NILAI } from "@/lib/nilai";
 import { NilaiGrid, PemilihNilai } from "./nilai-form";
+import { RiwayatNilai, type RiwayatNilaiItem } from "./riwayat-nilai";
 import type {
   KelasDetail,
   Mapel,
@@ -78,7 +79,8 @@ export default async function NilaiPage({
       ? sp.jenis
       : JENIS_NILAI[0];
 
-  const [{ data: siswaData }, { data: nilaiData }] = await Promise.all([
+  const [{ data: siswaData }, { data: nilaiData }, { data: riwayatData }] =
+    await Promise.all([
     supabase.from("siswa").select("*").eq("kelas_id", kelasId).order("urutan"),
     mapelTerpilih
       ? supabase
@@ -89,10 +91,64 @@ export default async function NilaiPage({
           .eq("tanggal", tanggal)
           .eq("jenis", jenis)
       : Promise.resolve({ data: [] as NilaiHarian[] }),
+    // Semua nilai kelas ini (untuk daftar riwayat yang bisa dibuka ulang).
+    supabase
+      .from("nilai_harian")
+      .select(
+        "tanggal, jenis, nilai, mapel_id, mapel:mapel!nilai_harian_mapel_id_fkey(nama)",
+      )
+      .eq("kelas_id", kelasId)
+      .order("tanggal", { ascending: false })
+      .limit(3000),
   ]);
 
   const siswaList = (siswaData ?? []) as Siswa[];
   const nilaiList = (nilaiData ?? []) as NilaiHarian[];
+
+  // Ringkas riwayat per (tanggal, mapel, jenis).
+  const petaRiwayat = new Map<
+    string,
+    { tanggal: string; mapel_id: string; mapel: string; jenis: string; jumlah: number; total: number }
+  >();
+  for (const n of (riwayatData ?? []) as unknown as {
+    tanggal: string;
+    jenis: string;
+    nilai: number;
+    mapel_id: string;
+    mapel: { nama: string } | { nama: string }[] | null;
+  }[]) {
+    const kunci = `${n.tanggal}|${n.mapel_id}|${n.jenis}`;
+    const row = petaRiwayat.get(kunci) ?? {
+      tanggal: n.tanggal,
+      mapel_id: n.mapel_id,
+      mapel: Array.isArray(n.mapel)
+        ? (n.mapel[0]?.nama ?? "—")
+        : (n.mapel?.nama ?? "—"),
+      jenis: n.jenis,
+      jumlah: 0,
+      total: 0,
+    };
+    row.jumlah += 1;
+    row.total += Number(n.nilai);
+    petaRiwayat.set(kunci, row);
+  }
+
+  const riwayatItems: RiwayatNilaiItem[] = [...petaRiwayat.values()]
+    .map((r) => ({
+      tanggal: r.tanggal,
+      mapel_id: r.mapel_id,
+      mapel: r.mapel,
+      jenis: r.jenis,
+      jumlah: r.jumlah,
+      rata: Math.round((r.total / r.jumlah) * 10) / 10,
+    }))
+    .sort((a, b) =>
+      a.tanggal === b.tanggal
+        ? a.mapel.localeCompare(b.mapel) || a.jenis.localeCompare(b.jenis)
+        : a.tanggal < b.tanggal
+          ? 1
+          : -1,
+    );
 
   return (
     <div className="space-y-6">
@@ -134,15 +190,25 @@ export default async function NilaiPage({
               Belum ada santri di kelas ini.
             </p>
           ) : (
-            <NilaiGrid
-              kelasId={kelasId}
-              mapelId={mapelTerpilih.id}
-              tanggal={tanggal}
-              jenis={jenis}
-              siswaList={siswaList}
-              existing={nilaiList}
-              bisaEdit={bisaEdit}
-            />
+            <>
+              <NilaiGrid
+                kelasId={kelasId}
+                mapelId={mapelTerpilih.id}
+                tanggal={tanggal}
+                jenis={jenis}
+                siswaList={siswaList}
+                existing={nilaiList}
+                bisaEdit={bisaEdit}
+              />
+
+              <RiwayatNilai
+                kelasId={kelasId}
+                items={riwayatItems}
+                aktifTanggal={tanggal}
+                aktifMapel={mapelTerpilih.id}
+                aktifJenis={jenis}
+              />
+            </>
           )}
         </>
       )}

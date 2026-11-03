@@ -2,14 +2,16 @@
 
 import { useState } from "react";
 
-type TabKey = "absensi" | "tugas" | "lintas";
+type TabKey = "absensi" | "nilai" | "tugas" | "lintas";
 
 export function SantriTabs({
   absensi,
+  nilai,
   tugas,
   lintas,
 }: {
   absensi: React.ReactNode;
+  nilai: React.ReactNode;
   tugas: React.ReactNode;
   lintas: React.ReactNode;
 }) {
@@ -17,6 +19,7 @@ export function SantriTabs({
 
   const tabs: { key: TabKey; label: string }[] = [
     { key: "absensi", label: "Absensi" },
+    { key: "nilai", label: "Nilai" },
     { key: "tugas", label: "Tugas" },
     { key: "lintas", label: "Lintas Tahun" },
   ];
@@ -39,6 +42,7 @@ export function SantriTabs({
         ))}
       </div>
       {tab === "absensi" && absensi}
+      {tab === "nilai" && nilai}
       {tab === "tugas" && tugas}
       {tab === "lintas" && lintas}
     </div>

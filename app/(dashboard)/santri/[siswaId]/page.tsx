@@ -5,6 +5,10 @@ import { SantriTabs } from "./santri-tabs";
 import { GrafikBulanan } from "./grafik-bulanan";
 import { KalenderAbsensi } from "./kalender-absensi";
 import { RiwayatTugas, type PengumpulanDenganTugas } from "./riwayat-tugas";
+import {
+  RiwayatNilaiSantri,
+  type NilaiSantriRow,
+} from "./riwayat-nilai-santri";
 import { RiwayatTahun } from "./riwayat-tahun";
 import { NisForm } from "./nis-form";
 import { formatTanggal } from "@/lib/periode";
@@ -44,6 +48,7 @@ export default async function SantriDetailPage({
     { data: absensiData },
     { data: pengumpulanData },
     { data: riwayatData },
+    { data: nilaiData },
   ] = await Promise.all([
     supabase.rpc("rekap_bulanan_siswa", { p_siswa_id: siswaId }),
     supabase
@@ -59,6 +64,14 @@ export default async function SantriDetailPage({
     santri.nis
       ? supabase.rpc("riwayat_santri_by_nis", { p_nis: santri.nis })
       : Promise.resolve({ data: [] }),
+    supabase
+      .from("nilai_harian")
+      .select(
+        "id, tanggal, jenis, nilai, catatan, mapel:mapel!nilai_harian_mapel_id_fkey(nama)",
+      )
+      .eq("siswa_id", siswaId)
+      .order("tanggal", { ascending: false })
+      .limit(300),
   ]);
 
   const bulanan = (bulananData ?? []) as BulananSiswa[];
@@ -66,6 +79,26 @@ export default async function SantriDetailPage({
   const pengumpulanList = (pengumpulanData ??
     []) as unknown as PengumpulanDenganTugas[];
   const riwayat = (riwayatData ?? []) as RiwayatTahunRow[];
+
+  const nilaiSantri: NilaiSantriRow[] = (
+    (nilaiData ?? []) as unknown as {
+      id: string;
+      tanggal: string;
+      jenis: string;
+      nilai: number;
+      catatan: string | null;
+      mapel: { nama: string } | { nama: string }[] | null;
+    }[]
+  ).map((n) => ({
+    id: n.id,
+    tanggal: n.tanggal,
+    jenis: n.jenis,
+    nilai: Number(n.nilai),
+    catatan: n.catatan,
+    mapel: Array.isArray(n.mapel)
+      ? (n.mapel[0]?.nama ?? "—")
+      : (n.mapel?.nama ?? "—"),
+  }));
 
   const hitung = (s: StatusAbsensi) =>
     absensiList.filter((a) => a.status === s).length;
@@ -162,6 +195,7 @@ export default async function SantriDetailPage({
 
       <SantriTabs
         absensi={absensiKonten}
+        nilai={<RiwayatNilaiSantri rows={nilaiSantri} />}
         tugas={<RiwayatTugas rows={pengumpulanList} />}
         lintas={
           <RiwayatTahun
