@@ -11,11 +11,13 @@ import {
   CalendarRange,
   CheckSquare,
   ChevronRight,
+  House,
   KeyRound,
-  LayoutDashboard,
   LogOut,
+  School,
   Search,
   Shield,
+  Sparkles,
   Users,
   X,
 } from "lucide-react";
@@ -64,7 +66,13 @@ function ItemMenu({
           : "font-medium text-slate-600 active:bg-slate-100"
       }`}
     >
-      <Icon size={18} strokeWidth={aktif ? 2.2 : 1.9} />
+      <span
+        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition ${
+          aktif ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-500"
+        }`}
+      >
+        <Icon size={16} />
+      </span>
       <span className="flex-1">{label}</span>
       {aktif && <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />}
     </Link>
@@ -124,7 +132,7 @@ export function MobileMenu({
         onClick={() => setBuka(true)}
         aria-label="Buka menu"
         aria-expanded={buka}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-700 ring-1 ring-emerald-200 transition active:scale-95"
+        className="brand-gradient flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white shadow-sm shadow-emerald-900/20 transition active:scale-95"
       >
         {inisial(nama) || "GU"}
       </button>
@@ -142,7 +150,7 @@ export function MobileMenu({
 
           <div className="absolute right-0 top-0 flex h-full w-[19rem] max-w-[88vw] flex-col overflow-y-auto rounded-l-3xl bg-white shadow-2xl">
             <div className="flex items-start gap-3 px-5 pb-4 pt-5">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-sm font-bold text-white">
+              <span className="brand-gradient flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white shadow-sm shadow-emerald-900/20">
                 {inisial(nama) || "GU"}
               </span>
               <div className="min-w-0 flex-1">
@@ -163,7 +171,11 @@ export function MobileMenu({
               </button>
             </div>
 
-            <div className="mx-4 rounded-2xl bg-emerald-50 px-4 py-3">
+            <div className="mx-4 flex items-center gap-3 rounded-2xl bg-emerald-50 px-4 py-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/80 text-emerald-700">
+                <Sparkles size={17} />
+              </span>
+              <div className="min-w-0">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700/70">
                 Tahun Pelajaran Aktif
               </p>
@@ -175,6 +187,7 @@ export function MobileMenu({
                   {semesterLabel}
                 </p>
               )}
+              </div>
             </div>
 
             <div className="mt-5 px-3">
@@ -182,11 +195,11 @@ export function MobileMenu({
                 Menu
               </p>
               <div className="space-y-0.5">
-                <ItemMenu href="/" label="Dashboard" icon={LayoutDashboard} exact />
+                <ItemMenu href="/" label="Dashboard" icon={House} exact />
                 {isAdmin && (
                   <ItemMenu href="/tahun-pelajaran" label="Tahun Pelajaran" icon={CalendarRange} />
                 )}
-                <ItemMenu href="/kelas" label="Kelas" icon={Users} exact />
+                <ItemMenu href="/kelas" label="Kelas" icon={School} exact />
                 {!isAdmin && (
                   <ItemMenu href="/ambil-kelas" label="Ambil Kelas" icon={CheckSquare} />
                 )}

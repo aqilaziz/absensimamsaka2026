@@ -131,21 +131,25 @@ export default async function DashboardPage() {
         <StatCard
           icon={<Users size={20} />}
           label="Kelas"
+          tone="emerald"
           value={kelasList.length}
         />
         <StatCard
           icon={<GraduationCap size={20} />}
           label="Santri"
+          tone="sky"
           value={jumlahSantri}
         />
         <StatCard
           icon={<CalendarCheck size={20} />}
           label="Absensi hari ini"
+          tone="amber"
           value={absensiHariIni}
         />
         <StatCard
           icon={<ClipboardList size={20} />}
           label="Total tugas"
+          tone="violet"
           value={jumlahTugas}
         />
       </div>
@@ -238,18 +242,29 @@ export default async function DashboardPage() {
   );
 }
 
+const TONE: Record<string, string> = {
+  emerald: "bg-emerald-50 text-emerald-700",
+  sky: "bg-sky-50 text-sky-700",
+  amber: "bg-amber-50 text-amber-700",
+  violet: "bg-violet-50 text-violet-700",
+};
+
 function StatCard({
   icon,
   label,
   value,
+  tone = "emerald",
 }: {
   icon: React.ReactNode;
   label: string;
   value: number;
+  tone?: keyof typeof TONE;
 }) {
   return (
     <div className="surface p-4 sm:p-5">
-      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+      <span
+        className={`flex h-9 w-9 items-center justify-center rounded-xl ${TONE[tone]}`}
+      >
         {icon}
       </span>
       <p className="mt-3 text-2xl font-bold tabular-nums tracking-tight text-slate-900">

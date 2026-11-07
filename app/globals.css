@@ -1,18 +1,59 @@
 @import "tailwindcss";
 
+/*
+ * Palet "Jade" — hijau tua yang lebih tenang dan berkelas daripada emerald
+ * bawaan Tailwind. Didefinisikan ulang lewat @theme agar seluruh kelas
+ * `bg-emerald-*`, `text-emerald-*`, `ring-emerald-*` di aplikasi ikut
+ * berubah dari satu tempat (tidak perlu menyentuh ratusan file).
+ */
+@theme {
+  --color-emerald-50: #f1f9f5;
+  --color-emerald-100: #ddf2e7;
+  --color-emerald-200: #bbe4d0;
+  --color-emerald-300: #8acfb2;
+  --color-emerald-400: #52b38e;
+  --color-emerald-500: #2a9674;
+  --color-emerald-600: #14795d;
+  --color-emerald-700: #10614c;
+  --color-emerald-800: #104e3e;
+  --color-emerald-900: #0d4034;
+  --color-emerald-950: #07271f;
+}
+
 :root {
   color-scheme: light;
+  --canvas: #f6f9f7;
 }
 
 body {
-  @apply bg-slate-50 text-slate-800 antialiased;
+  @apply text-slate-800 antialiased;
+  background-color: var(--canvas);
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Ikon (lucide-react) diseragamkan: goresan lebih tipis & konsisten. */
+@layer base {
+  svg.lucide {
+    stroke-width: 1.75;
+  }
 }
 
 /* Permukaan kartu konsisten di seluruh aplikasi (mobile & desktop). */
 @layer utilities {
   .surface {
-    @apply rounded-2xl bg-white shadow-[0_2px_12px_rgba(15,23,42,0.05)] ring-1 ring-slate-200/70;
+    @apply rounded-2xl bg-white shadow-[0_2px_14px_rgba(7,39,31,0.055)] ring-1 ring-slate-200/70;
+  }
+
+  .brand-gradient {
+    background-image: linear-gradient(
+      135deg,
+      var(--color-emerald-600),
+      var(--color-emerald-800)
+    );
+  }
+
+  .icon-well {
+    @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700;
   }
 }
 
@@ -22,7 +63,10 @@ body {
   }
 
   .btn-primary {
-    @apply min-h-[42px] rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-emerald-600/20 transition hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100;
+    @apply min-h-[42px] rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.16),
+      0 6px 16px rgba(16, 97, 76, 0.2);
   }
 
   .btn-secondary {
@@ -30,7 +74,7 @@ body {
   }
 
   .card {
-    @apply rounded-2xl bg-white p-4 shadow-[0_2px_12px_rgba(15,23,42,0.05)] ring-1 ring-slate-200/70 sm:p-5;
+    @apply rounded-2xl bg-white p-4 shadow-[0_2px_14px_rgba(7,39,31,0.055)] ring-1 ring-slate-200/70 sm:p-5;
   }
 
   .th {

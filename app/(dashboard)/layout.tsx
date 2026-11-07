@@ -323,7 +323,7 @@ export default function DashboardLayout({
   return (
     <div className="flex min-h-screen">
       {/* Sidebar desktop — dimuat terpisah agar children tidak menunggu. */}
-      <aside className="hidden w-64 shrink-0 flex-col overflow-y-auto bg-emerald-950 md:flex">
+      <aside className="hidden w-64 shrink-0 flex-col overflow-y-auto bg-gradient-to-b from-emerald-950 via-emerald-950 to-emerald-900 md:flex">
         <Suspense fallback={<SidebarSkeleton />}>
           <SidebarContent />
         </Suspense>

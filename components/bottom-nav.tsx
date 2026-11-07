@@ -2,16 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  ClipboardCheck,
-  LayoutDashboard,
-  Search,
-  UserRound,
-} from "lucide-react";
+import { House, School, Search, UserRound } from "lucide-react";
 
 const ITEMS = [
-  { href: "/", label: "Beranda", icon: LayoutDashboard, exact: true },
-  { href: "/kelas", label: "Kelas", icon: ClipboardCheck, exact: false },
+  { href: "/", label: "Beranda", icon: House, exact: true },
+  { href: "/kelas", label: "Kelas", icon: School, exact: false },
   { href: "/cari-santri", label: "Cari", icon: Search, exact: false },
   { href: "/akun", label: "Akun", icon: UserRound, exact: false },
 ];
@@ -48,11 +43,11 @@ export function BottomNav() {
                 <span
                   className={`flex h-8 w-16 items-center justify-center rounded-full transition ${
                     aktif
-                      ? "bg-emerald-100 text-emerald-700"
+                      ? "bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200/70"
                       : "text-slate-400"
                   }`}
                 >
-                  <Icon size={20} strokeWidth={aktif ? 2.3 : 1.9} />
+                  <Icon size={19} />
                 </span>
                 <span
                   className={`text-[11px] leading-none ${
