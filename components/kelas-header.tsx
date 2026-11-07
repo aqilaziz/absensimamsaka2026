@@ -25,11 +25,11 @@ export function KelasHeader({
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <Link
           href="/kelas"
-          className="text-sm text-slate-400 hover:text-slate-600"
+          className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500 ring-1 ring-slate-200 transition active:scale-95"
         >
           ← Kelas
         </Link>
-        <h1 className="w-full text-xl font-bold text-slate-900 sm:w-auto sm:text-2xl">
+        <h1 className="w-full text-2xl font-bold tracking-tight text-slate-900 sm:w-auto sm:text-2xl">
           {kelas.nama}
         </h1>
         {kelas.mapel && <MapelBadge mapel={kelas.mapel} />}
@@ -43,7 +43,7 @@ export function KelasHeader({
           </span>
         )}
       </div>
-      <div className="no-scrollbar flex max-w-full gap-1 overflow-x-auto rounded-xl bg-white p-1 ring-1 ring-slate-200">
+      <div className="no-scrollbar flex max-w-full gap-1 overflow-x-auto rounded-2xl bg-slate-100/80 p-1">
         {tabs.map((t) => (
           <Link
             key={t.key}
@@ -51,8 +51,8 @@ export function KelasHeader({
             prefetch={false}
             className={
               active === t.key
-                ? "shrink-0 whitespace-nowrap rounded-lg bg-emerald-600 px-4 py-1.5 text-sm font-semibold text-white"
-                : "shrink-0 whitespace-nowrap rounded-lg px-4 py-1.5 text-sm text-slate-600 transition hover:bg-slate-100"
+                ? "shrink-0 whitespace-nowrap rounded-xl bg-white px-4 py-2 text-sm font-semibold text-emerald-700 shadow-sm"
+                : "shrink-0 whitespace-nowrap rounded-xl px-4 py-2 text-sm font-medium text-slate-500 transition active:bg-white/60"
             }
           >
             {t.label}

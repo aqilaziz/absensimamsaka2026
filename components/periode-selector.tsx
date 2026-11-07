@@ -46,7 +46,7 @@ export function PeriodeSelector({
   return (
     <div className="flex max-w-full flex-wrap items-center gap-2 sm:gap-3">
       {/* Tab absensi/tugas */}
-      <div className="no-scrollbar flex max-w-full gap-1 overflow-x-auto rounded-xl bg-white p-1 ring-1 ring-slate-200">
+      <div className="no-scrollbar flex max-w-full gap-1 overflow-x-auto rounded-2xl bg-slate-100/80 p-1">
         {(
           [
             { key: "absensi", label: "Absensi" },
@@ -60,8 +60,8 @@ export function PeriodeSelector({
             onClick={() => go({ tab: t.key })}
             className={
               tab === t.key
-                ? "shrink-0 whitespace-nowrap rounded-lg bg-emerald-600 px-4 py-1.5 text-sm font-semibold text-white"
-                : "shrink-0 whitespace-nowrap rounded-lg px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
+                ? "shrink-0 whitespace-nowrap rounded-xl bg-white px-4 py-2 text-sm font-semibold text-emerald-700 shadow-sm"
+                : "shrink-0 whitespace-nowrap rounded-xl px-4 py-2 text-sm font-medium text-slate-500 transition active:bg-white/60"
             }
           >
             {t.label}
@@ -70,7 +70,7 @@ export function PeriodeSelector({
       </div>
 
       {/* Periode */}
-      <div className="no-scrollbar flex max-w-full gap-1 overflow-x-auto rounded-xl bg-white p-1 ring-1 ring-slate-200">
+      <div className="no-scrollbar flex max-w-full gap-1 overflow-x-auto rounded-2xl bg-slate-100/80 p-1">
         {(
           [
             { key: "bulan", label: "Bulan" },
@@ -83,8 +83,8 @@ export function PeriodeSelector({
             onClick={() => go({ periode: p.key })}
             className={
               periode === p.key
-                ? "shrink-0 whitespace-nowrap rounded-lg bg-slate-800 px-4 py-1.5 text-sm font-semibold text-white"
-                : "shrink-0 whitespace-nowrap rounded-lg px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
+                ? "shrink-0 whitespace-nowrap rounded-xl bg-slate-800 px-4 py-2 text-sm font-semibold text-white shadow-sm"
+                : "shrink-0 whitespace-nowrap rounded-xl px-4 py-2 text-sm font-medium text-slate-500 transition active:bg-white/60"
             }
           >
             {p.label}
@@ -102,7 +102,7 @@ export function PeriodeSelector({
         />
       )}
       {periode === "semester" && (
-        <div className="no-scrollbar flex max-w-full gap-1 overflow-x-auto rounded-xl bg-white p-1 ring-1 ring-slate-200">
+        <div className="no-scrollbar flex max-w-full gap-1 overflow-x-auto rounded-2xl bg-slate-100/80 p-1">
           {(
             [
               { key: "ganjil", label: "Ganjil" },

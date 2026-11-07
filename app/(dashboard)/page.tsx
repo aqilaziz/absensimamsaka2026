@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { format } from "date-fns";
+import { id as localeId } from "date-fns/locale";
 import { createClient } from "@/lib/supabase/server";
 import { ambilKelasSaya, type KelasRingkas } from "@/lib/kelas";
 import { ambilProfilSendiri } from "@/lib/profil";
@@ -113,14 +114,16 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">
+      <div className="space-y-1">
+        <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">
+          {format(new Date(), "EEEE, d MMMM yyyy", { locale: localeId })}
+        </p>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
           Ahlan, {profil?.nama ?? "Guru"}
         </h1>
         <p className="text-sm text-slate-500">
           Tahun pelajaran {tahun.nama}
-          {semesterBerjalan && ` · ${labelSemester(semesterBerjalan.nama)}`} ·{" "}
-          {format(new Date(), "EEEE, d MMMM yyyy")}
+          {semesterBerjalan && ` · ${labelSemester(semesterBerjalan.nama)}`}
         </p>
       </div>
 
@@ -148,9 +151,14 @@ export default async function DashboardPage() {
       </div>
 
       <div>
-        <h2 className="mb-3 text-lg font-semibold text-slate-900">
-          {isAdmin ? "Kelas" : "Kelas yang Anda ampu"}
-        </h2>
+        <div className="mb-3 flex items-baseline justify-between gap-2">
+          <h2 className="text-base font-bold tracking-tight text-slate-900">
+            {isAdmin ? "Kelas" : "Kelas yang Anda ampu"}
+          </h2>
+          <span className="text-xs font-medium text-slate-400">
+            {kelasList.length} kelas
+          </span>
+        </div>
         {kelasList.length === 0 ? (
           <p className="rounded-xl bg-white p-6 text-sm text-slate-500 ring-1 ring-slate-200">
             {isAdmin ? (
@@ -180,15 +188,16 @@ export default async function DashboardPage() {
             {kelasList.map((k) => (
               <div
                 key={k.id}
-                className="relative rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200 border-t-4 border-t-emerald-500 transition hover:ring-emerald-300 hover:shadow-md"
+                className="surface relative p-5 transition active:scale-[0.99] hover:ring-emerald-300 hover:shadow-md"
               >
                 <div className="flex flex-wrap items-center gap-2">
                   {/* Stretched link: ::after menutupi seluruh kartu sehingga
                       klik di mana pun membuka detail kelas. Elemen interaktif
                       lain di dalam kartu perlu `relative z-10`. */}
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500" />
                   <Link
                     href={`/kelas/${k.id}/absensi`}
-                    className="text-base font-semibold text-slate-900 after:absolute after:inset-0 after:rounded-xl hover:text-emerald-700"
+                    className="text-base font-bold tracking-tight text-slate-900 after:absolute after:inset-0 after:rounded-2xl hover:text-emerald-700"
                   >
                     {k.nama}
                   </Link>
@@ -239,12 +248,16 @@ function StatCard({
   value: number;
 }) {
   return (
-    <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-5">
-      <div className="flex items-center gap-2 text-emerald-600">{icon}</div>
-      <p className="mt-3 text-xl font-bold text-slate-900 sm:text-2xl">
+    <div className="surface p-4 sm:p-5">
+      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+        {icon}
+      </span>
+      <p className="mt-3 text-2xl font-bold tabular-nums tracking-tight text-slate-900">
         {value}
       </p>
-      <p className="text-xs text-slate-500">{label}</p>
+      <p className="mt-0.5 text-[11px] font-medium uppercase tracking-wide text-slate-400">
+        {label}
+      </p>
     </div>
   );
 }

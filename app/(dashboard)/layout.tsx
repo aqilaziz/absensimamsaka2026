@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { NavLink } from "@/components/nav-link";
 import { MobileMenu } from "@/components/mobile-menu";
+import { BottomNav } from "@/components/bottom-nav";
 import { logout } from "./actions";
 import { labelSemester, semesterAktifHariIni } from "@/lib/periode";
 import { ambilKelasSaya, type KelasRingkas } from "@/lib/kelas";
@@ -255,45 +256,58 @@ async function TopbarMobile() {
     await ambilDataSidebar(supabase, profil);
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between gap-2 bg-emerald-950 px-3 py-2 md:hidden">
-      <div className="flex min-w-0 items-center gap-2">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/logomam1.png"
-          alt="Logo MAM 1 Paciran"
-          width={28}
-          height={28}
-          className="h-7 w-7 shrink-0 rounded-full bg-white object-contain p-0.5"
-        />
-        <span className="truncate font-bold leading-tight text-white">
-          MAM 1 Paciran
-        </span>
-      </div>
+    <header className="sticky top-0 z-30 border-b border-slate-200/70 bg-white/90 backdrop-blur-lg md:hidden">
+      <div className="flex items-center justify-between gap-2 px-4 py-2.5">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 ring-1 ring-emerald-100">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logomam1.png"
+              alt="Logo MAM 1 Paciran"
+              width={30}
+              height={30}
+              className="h-8 w-8 rounded-lg bg-white object-contain p-0.5"
+            />
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-[15px] font-bold leading-tight text-slate-900">
+              MAM 1 Paciran
+            </p>
+            <p className="truncate text-[11px] leading-tight text-slate-400">
+              {tahun?.nama ?? "Absensi Santri"}
+              {semesterBerjalan
+                ? ` · ${labelSemester(semesterBerjalan.nama)}`
+                : ""}
+            </p>
+          </div>
+        </div>
 
-      <MobileMenu
-        nama={profil?.nama ?? "Guru"}
-        isAdmin={isAdmin}
-        tahunNama={tahun?.nama ?? null}
-        semesterLabel={
-          semesterBerjalan ? labelSemester(semesterBerjalan.nama) : null
-        }
-        semesters={semesters.map((sm) => ({ id: sm.id, nama: sm.nama }))}
-        kelas={kelasList.map((k) => ({
-          id: k.id,
-          nama: k.nama,
-          semester_id: k.semester_id,
-        }))}
-        logoutAction={logout}
-      />
+        <MobileMenu
+          nama={profil?.nama ?? "Guru"}
+          isAdmin={isAdmin}
+          tahunNama={tahun?.nama ?? null}
+          semesterLabel={
+            semesterBerjalan ? labelSemester(semesterBerjalan.nama) : null
+          }
+          semesters={semesters.map((sm) => ({ id: sm.id, nama: sm.nama }))}
+          kelas={kelasList.map((k) => ({
+            id: k.id,
+            nama: k.nama,
+            semester_id: k.semester_id,
+          }))}
+          logoutAction={logout}
+        />
+      </div>
     </header>
   );
 }
 
 function TopbarSkeleton() {
   return (
-    <div className="flex animate-pulse items-center gap-3 bg-emerald-950 px-4 py-3 md:hidden">
-      <div className="h-7 w-7 rounded-full bg-emerald-800/60" />
-      <div className="h-4 w-28 rounded bg-emerald-800/60" />
+    <div className="flex animate-pulse items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 md:hidden">
+      <div className="h-9 w-9 rounded-xl bg-slate-100" />
+      <div className="h-4 w-28 rounded bg-slate-100" />
+      <div className="ml-auto h-9 w-9 rounded-full bg-slate-100" />
     </div>
   );
 }
@@ -320,7 +334,11 @@ export default function DashboardLayout({
           <TopbarMobile />
         </Suspense>
 
-        <main className="min-w-0 flex-1 p-4 sm:p-6 md:p-8">{children}</main>
+        <main className="min-w-0 flex-1 px-4 pb-28 pt-5 sm:px-6 md:p-8">
+          {children}
+        </main>
+
+        <BottomNav />
       </div>
     </div>
   );
