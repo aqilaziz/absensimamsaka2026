@@ -188,7 +188,7 @@ export default async function DashboardPage() {
             )}
           </p>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-4 min-[600px]:grid-cols-2 xl:grid-cols-3">
             {kelasList.map((k) => (
               <div
                 key={k.id}
@@ -213,22 +213,22 @@ export default async function DashboardPage() {
                       : "Ganjil"}
                   </span>
                 )}
-                <div className="relative z-10 mt-3 flex flex-wrap gap-2 text-xs">
+                <div className="relative z-10 mt-3 flex flex-wrap gap-1.5 text-[11px]">
                   <Link
                     href={`/kelas/${k.id}/absensi`}
-                    className="rounded-full bg-emerald-50 px-3 py-1 font-medium text-emerald-700 hover:bg-emerald-100"
+                    className="rounded-full bg-emerald-50 px-2.5 py-1 font-medium text-emerald-700 hover:bg-emerald-100"
                   >
                     Absensi
                   </Link>
                   <Link
                     href={`/kelas/${k.id}/tugas`}
-                    className="rounded-full bg-sky-50 px-3 py-1 font-medium text-sky-700 hover:bg-sky-100"
+                    className="rounded-full bg-sky-50 px-2.5 py-1 font-medium text-sky-700 hover:bg-sky-100"
                   >
                     Tugas
                   </Link>
                   <Link
                     href={`/kelas/${k.id}/rekap`}
-                    className="rounded-full bg-violet-50 px-3 py-1 font-medium text-violet-700 hover:bg-violet-100"
+                    className="rounded-full bg-violet-50 px-2.5 py-1 font-medium text-violet-700 hover:bg-violet-100"
                   >
                     Rekap
                   </Link>
