@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { labelSemester } from "@/lib/periode";
@@ -92,7 +93,10 @@ export function MobileMenu({
   logoutAction: () => Promise<void>;
 }) {
   const [buka, setBuka] = useState(false);
+  const [siap, setSiap] = useState(false);
   const pathname = usePathname();
+
+  useEffect(() => setSiap(true), []);
 
   useEffect(() => setBuka(false), [pathname]);
 
@@ -125,7 +129,10 @@ export function MobileMenu({
         {inisial(nama) || "GU"}
       </button>
 
-      {buka && (
+      {/* Portal ke body: top bar memakai backdrop-blur, yang secara CSS
+          menjadi containing block bagi elemen fixed. Tanpa portal, panel
+          akan terpotong selebar/ setinggi top bar. */}
+      {buka && siap && createPortal(
         <div className="fixed inset-0 z-50 md:hidden">
           <div
             className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"
@@ -246,7 +253,8 @@ export function MobileMenu({
               </form>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );
