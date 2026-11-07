@@ -120,7 +120,7 @@ async function SidebarContent() {
         <form action={logout} className="flex-1">
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-red-600 px-2 py-1.5 text-xs font-semibold text-white transition hover:bg-red-700"
+            className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-white/10 px-2 py-2 text-xs font-semibold text-red-200 ring-1 ring-red-300/20 transition hover:bg-red-500/15 active:scale-[0.98]"
           >
             <LogOut size={13} /> Keluar
           </button>
