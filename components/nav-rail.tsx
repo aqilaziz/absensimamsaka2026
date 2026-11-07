@@ -42,7 +42,7 @@ export function NavRail({
   const pathname = usePathname();
 
   return (
-    <aside className="hidden w-20 shrink-0 flex-col items-center border-r border-slate-200/80 bg-white py-4 md:flex lg:hidden">
+    <aside className="sticky top-0 hidden h-screen w-20 shrink-0 flex-col items-center overflow-y-auto border-r border-slate-200/80 bg-white py-4 md:flex lg:hidden">
       <Link href="/" aria-label="Beranda" className="mb-4">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img

@@ -323,7 +323,7 @@ async function RailContent() {
 
 function RailSkeleton() {
   return (
-    <div className="hidden w-20 shrink-0 flex-col items-center gap-3 border-r border-slate-200 bg-white py-4 md:flex lg:hidden">
+    <div className="sticky top-0 hidden h-screen w-20 shrink-0 flex-col items-center gap-3 border-r border-slate-200 bg-white py-4 md:flex lg:hidden">
       <div className="h-10 w-10 animate-pulse rounded-xl bg-slate-100" />
       {Array.from({ length: 4 }).map((_, i) => (
         <div key={i} className="h-8 w-14 animate-pulse rounded-full bg-slate-100" />
