@@ -241,7 +241,7 @@ export function MobileMenu({
               </div>
             )}
 
-            <div className="mt-auto space-y-1 border-t border-slate-100 px-3 pb-6 pt-3">
+            <div className="sticky bottom-0 z-10 mt-auto space-y-1 border-t border-slate-100 bg-white/95 px-3 pb-6 pt-3 backdrop-blur">
               <ItemMenu href="/akun" label="Akun & Kata Sandi" icon={KeyRound} />
               <form action={logoutAction}>
                 <button
