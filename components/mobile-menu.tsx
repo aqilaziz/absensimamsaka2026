@@ -14,6 +14,7 @@ import {
   House,
   KeyRound,
   LogOut,
+  Menu,
   School,
   Search,
   Shield,
@@ -91,6 +92,7 @@ export function MobileMenu({
   semesters,
   kelas,
   logoutAction,
+  variant = "avatar",
 }: {
   nama: string;
   isAdmin: boolean;
@@ -99,6 +101,8 @@ export function MobileMenu({
   semesters: MobileMenuSemester[];
   kelas: MobileMenuKelas[];
   logoutAction: () => Promise<void>;
+  /** "avatar" dipakai top bar HP, "rail" dipakai navigation rail tablet. */
+  variant?: "avatar" | "rail";
 }) {
   const [buka, setBuka] = useState(false);
   const [siap, setSiap] = useState(false);
@@ -127,21 +131,39 @@ export function MobileMenu({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setBuka(true)}
-        aria-label="Buka menu"
-        aria-expanded={buka}
-        className="brand-gradient flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white shadow-sm shadow-emerald-900/20 transition active:scale-95"
-      >
-        {inisial(nama) || "GU"}
-      </button>
+      {variant === "rail" ? (
+        <button
+          type="button"
+          onClick={() => setBuka(true)}
+          aria-label="Buka menu"
+          aria-expanded={buka}
+          title="Lainnya"
+          className="flex w-full flex-col items-center gap-1 py-1 transition active:scale-95"
+        >
+          <span className="flex h-8 w-14 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+            <Menu size={19} />
+          </span>
+          <span className="text-[10px] font-medium leading-none text-slate-500">
+            Lainnya
+          </span>
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setBuka(true)}
+          aria-label="Buka menu"
+          aria-expanded={buka}
+          className="brand-gradient flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white shadow-sm shadow-emerald-900/20 transition active:scale-95"
+        >
+          {inisial(nama) || "GU"}
+        </button>
+      )}
 
       {/* Portal ke body: top bar memakai backdrop-blur, yang secara CSS
           menjadi containing block bagi elemen fixed. Tanpa portal, panel
           akan terpotong selebar/ setinggi top bar. */}
       {buka && siap && createPortal(
-        <div className="fixed inset-0 z-50 md:hidden">
+        <div className="fixed inset-0 z-50">
           <div
             className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]"
             onClick={() => setBuka(false)}

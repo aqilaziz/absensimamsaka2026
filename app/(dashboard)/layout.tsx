@@ -1,14 +1,15 @@
-import { Suspense } from "react";
+import { Suspense, cache } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { NavLink } from "@/components/nav-link";
 import { MobileMenu } from "@/components/mobile-menu";
 import { BottomNav } from "@/components/bottom-nav";
+import { NavRail } from "@/components/nav-rail";
 import { logout } from "./actions";
 import { labelSemester, semesterAktifHariIni } from "@/lib/periode";
 import { ambilKelasSaya, type KelasRingkas } from "@/lib/kelas";
 import { ambilProfilSendiri } from "@/lib/profil";
-import type { Profile, Semester, TahunPelajaran } from "@/lib/types";
+import type { Semester, TahunPelajaran } from "@/lib/types";
 import {
   Archive,
   CalendarRange,
@@ -22,13 +23,13 @@ import {
 } from "lucide-react";
 
 /**
- * Data yang dipakai bersama sidebar desktop & menu burger HP: tahun aktif,
- * daftar semester, dan kelas yang boleh dilihat pengguna.
+ * Data navigasi dipakai bersama sidebar desktop, navigation rail tablet,
+ * dan top bar HP. Dibungkus React `cache()` agar ketiganya tidak melakukan
+ * query Supabase yang sama berulang kali dalam satu request.
  */
-async function ambilDataSidebar(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  profil: Profile | null,
-) {
+const ambilNavigasi = cache(async () => {
+  const supabase = await createClient();
+  const profil = await ambilProfilSendiri(supabase);
   const isAdmin = profil?.role === "admin";
   // Hanya ada satu tahun pelajaran aktif untuk seluruh madrasah.
   const { data: aktifList } = await supabase
@@ -75,18 +76,15 @@ async function ambilDataSidebar(
     ? (semesters.find((s) => s.nama === semesterAktifHariIni(tahun)) ?? null)
     : null;
 
-  return { tahun, semesters, kelasList, semesterBerjalan };
-}
+  return { profil, isAdmin, tahun, semesters, kelasList, semesterBerjalan };
+});
 
 // Sidebar dimuat terpisah agar tidak memblokir render halaman.
 // Sebelumnya layout menunggu 4 query Supabase sebelum children bisa tampil,
 // sehingga setiap klik menu terasa menggantung.
 async function SidebarContent() {
-  const supabase = await createClient();
-  const profil = await ambilProfilSendiri(supabase);
-  const isAdmin = profil?.role === "admin";
-  const { tahun, semesters, kelasList, semesterBerjalan } =
-    await ambilDataSidebar(supabase, profil);
+  const { profil, isAdmin, tahun, semesters, kelasList, semesterBerjalan } =
+    await ambilNavigasi();
 
   return (
     <>
@@ -249,11 +247,8 @@ function SidebarSkeleton() {
 /** Topbar khusus layar kecil. Dibuat komponen sendiri agar peran pengguna
  *  dimuat di dalam Suspense — tidak menahan render halaman. */
 async function TopbarMobile() {
-  const supabase = await createClient();
-  const profil = await ambilProfilSendiri(supabase);
-  const isAdmin = profil?.role === "admin";
-  const { tahun, semesters, kelasList, semesterBerjalan } =
-    await ambilDataSidebar(supabase, profil);
+  const { profil, isAdmin, tahun, semesters, kelasList, semesterBerjalan } =
+    await ambilNavigasi();
 
   return (
     <header className="sticky top-0 z-30 border-b border-slate-200/70 bg-white/90 backdrop-blur-lg md:hidden">
@@ -302,6 +297,41 @@ async function TopbarMobile() {
   );
 }
 
+/** Navigation rail untuk tablet: data sama, tampilan ringkas. */
+async function RailContent() {
+  const { profil, isAdmin, tahun, semesters, kelasList, semesterBerjalan } =
+    await ambilNavigasi();
+
+  return (
+    <NavRail
+      nama={profil?.nama ?? "Guru"}
+      isAdmin={isAdmin}
+      tahunNama={tahun?.nama ?? null}
+      semesterLabel={
+        semesterBerjalan ? labelSemester(semesterBerjalan.nama) : null
+      }
+      semesters={semesters.map((sm) => ({ id: sm.id, nama: sm.nama }))}
+      kelas={kelasList.map((k) => ({
+        id: k.id,
+        nama: k.nama,
+        semester_id: k.semester_id,
+      }))}
+      logoutAction={logout}
+    />
+  );
+}
+
+function RailSkeleton() {
+  return (
+    <div className="hidden w-20 shrink-0 flex-col items-center gap-3 border-r border-slate-200 bg-white py-4 md:flex lg:hidden">
+      <div className="h-10 w-10 animate-pulse rounded-xl bg-slate-100" />
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i} className="h-8 w-14 animate-pulse rounded-full bg-slate-100" />
+      ))}
+    </div>
+  );
+}
+
 function TopbarSkeleton() {
   return (
     <div className="flex animate-pulse items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 md:hidden">
@@ -322,12 +352,17 @@ export default function DashboardLayout({
   // menunggu query profil dulu sehingga setiap navigasi tertahan ~200-400 ms.
   return (
     <div className="flex min-h-screen">
-      {/* Sidebar desktop — dimuat terpisah agar children tidak menunggu. */}
-      <aside className="hidden w-64 shrink-0 flex-col overflow-y-auto bg-gradient-to-b from-emerald-950 via-emerald-950 to-emerald-900 md:flex">
+      {/* Desktop ≥1024px: sidebar penuh. */}
+      <aside className="hidden w-64 shrink-0 flex-col overflow-y-auto bg-gradient-to-b from-emerald-950 via-emerald-950 to-emerald-900 lg:flex">
         <Suspense fallback={<SidebarSkeleton />}>
           <SidebarContent />
         </Suspense>
       </aside>
+
+      {/* Tablet 768–1023px: navigation rail Material 3 (ikon saja). */}
+      <Suspense fallback={<RailSkeleton />}>
+        <RailContent />
+      </Suspense>
 
       <div className="flex min-w-0 flex-1 flex-col">
         <Suspense fallback={<TopbarSkeleton />}>
